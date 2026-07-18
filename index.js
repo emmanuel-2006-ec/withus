@@ -1,5 +1,6 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
+const QRCode = require('qrcode');
 const fs = require('fs');
 const { exec } = require('child_process');
 const path = require('path');
@@ -41,12 +42,14 @@ function saveDB(data) {
 }
 
 // ----------------------------------------------
-// 🌐 HTTP SERVER (Keeps Render awake & handles pings)
-// 👇 PASTE THIS ENTIRE BLOCK HERE (right after saveDB)
+// 🌐 HTTP SERVER (Keeps Render awake & handles QR)
 // ----------------------------------------------
 const express = require('express');
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Store QR code temporarily
+let currentQR = null;
 
 app.get('/', (req, res) => {
     res.status(200).send('OK');
@@ -56,12 +59,24 @@ app.get('/health', (req, res) => {
     res.status(200).send('Bot is running');
 });
 
+// 🆕 WEB QR CODE ROUTE - Visit this URL to see the QR code!
+app.get('/qr', async (req, res) => {
+    if (currentQR) {
+        try {
+            res.setHeader('Content-Type', 'image/png');
+            const qrImage = await QRCode.toBuffer(currentQR);
+            res.send(qrImage);
+        } catch (err) {
+            res.status(500).send('Error generating QR code');
+        }
+    } else {
+        res.send('⏳ No QR code available yet. Wait for bot to initialize...');
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`✅ HTTP server running on port ${PORT}`);
 });
-// ----------------------------------------------
-// 🌐 END OF HTTP SERVER BLOCK
-// ----------------------------------------------
 
 // ----------------------------------------------
 // 🛠️ HELPER: Download media using yt-dlp
@@ -91,20 +106,50 @@ function downloadMedia(url, outputPath, type = 'audio') {
 // ----------------------------------------------
 // 🤖 BOT CLIENT
 // ----------------------------------------------
+console.log('🚀 Starting bot client...');
+
 const client = new Client({
     authStrategy: new LocalAuth(),
-    puppeteer: { headless: true, args: ['--no-sandbox'] }
+    puppeteer: { 
+        headless: true, 
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--no-first-run',
+            '--no-zygote',
+            '--single-process',
+            '--disable-gpu'
+        ]
+    }
 });
 
+console.log('✅ Client created, waiting for QR code...');
+
 client.on('qr', qr => {
+    currentQR = qr; // Store for web route
+    console.log('📲 QR CODE GENERATED!');
     qrcode.generate(qr, { small: true });
-    console.log('📲 Scan the QR code above with WhatsApp!');
+    console.log('📲 OR visit: https://your-bot.onrender.com/qr to see QR code as image!');
+});
+
+client.on('authenticated', () => {
+    console.log('✅ Authenticated successfully!');
+});
+
+client.on('auth_failure', msg => {
+    console.error('❌ Authentication failed:', msg);
 });
 
 client.on('ready', () => {
     console.log(`✅ ${BOT_NAME} is ONLINE!`);
     console.log('👑 Admin:', ADMIN_NUMBER);
     console.log('📢 Users get 4 free downloads.');
+});
+
+client.on('disconnected', (reason) => {
+    console.log('❌ Bot disconnected:', reason);
 });
 
 client.on('message_create', async (message) => {
