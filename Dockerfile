@@ -1,4 +1,4 @@
-FROM node:18-slim
+FROM node:18
 
 # Install FFmpeg, Chromium, and yt-dlp
 RUN apt-get update && apt-get install -y \
@@ -6,7 +6,7 @@ RUN apt-get update && apt-get install -y \
     chromium \
     python3 \
     python3-pip \
-    && pip3 install yt-dlp \
+    yt-dlp \
     && rm -rf /var/lib/apt/lists/*
 
 # Tell Puppeteer where to find Chromium
@@ -21,7 +21,7 @@ RUN npm install
 # Copy your bot code
 COPY . .
 
-# 👇👇👇 PUT THE EXPOSE LINE RIGHT HERE 👇👇👇
+# Expose port for health checks
 EXPOSE 3000
 
 # Start the bot
