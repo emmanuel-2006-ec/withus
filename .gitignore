@@ -1,32 +1,7 @@
-# Dependencies
 node_modules/
 package-lock.json
-yarn.lock
-
-# Database (stores user limits and premium status)
 database.json
-
-# Temporary download folder
 temp_downloads/
-
-# WhatsApp session data (prevents uploading your login session)
-.wwebjs_auth/
-.session-*
-auth_info/
-*.session
-
-# Environment variables
-.env
-.env.local
-
-# System files
 .DS_Store
-Thumbs.db
 *.log
-*.tmp
-
-# IDE files
-.vscode/
-.idea/
-*.swp
-*.swo
+.env
