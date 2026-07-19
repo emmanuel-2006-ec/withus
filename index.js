@@ -1,45 +1,30 @@
 const express = require('express');
 const fs = require('fs');
-const path = require('path');
 const { exec } = require('child_process');
-const makeWASocket = require('@arceos/baileys').default;
-const { useMultiFileAuthState } = require('@arceos/baileys');
-const { DisconnectReason } = require('@arceos/baileys');
+const path = require('path');
 
 // ----------------------------------------------
-// 📌 CONFIGURATION - CHANGE THIS ONE LINE!
-// Replace with YOUR WhatsApp number (country code + number, NO plus sign, NO @s.whatsapp.net)
-// Example: +265891011842 -> '265891011842'
+// 📌 CONFIGURATION
 // ----------------------------------------------
-const ADMIN_NUMBER = '265891011842'; // <--- CHANGE THIS TO YOUR NUMBER
+const ADMIN_NAME = 'Emmanuel'; // <--- CHANGE THIS TO YOUR NAME
+const ADMIN_ID = null; // Leave null or set your user ID
 
 // ----------------------------------------------
-// 🤖 BOT IDENTITY
-// ----------------------------------------------
-const BOT_NAME = 'with-us AI';
-const DEVELOPER_NAME = 'Emmanuel Chimombo';
-const DEVELOPER_TITLE = 'Full Stack System and Online Applications Developer';
-const DEVELOPER_EDUCATION = 'ICT Student, Mzuzu University';
-
-// ----------------------------------------------
-// 📂 FOLDERS
+// 📂 SETUP
 // ----------------------------------------------
 const TEMP_DIR = './temp_downloads/';
-const SESSION_DIR = './session/';
-
-if (!fs.existsSync(TEMP_DIR)) fs.mkdirSync(TEMP_DIR);
-if (!fs.existsSync(SESSION_DIR)) fs.mkdirSync(SESSION_DIR);
-
-// ----------------------------------------------
-// 📂 DATABASE (For freemium limits)
-// ----------------------------------------------
 const DB_PATH = './database.json';
 
+if (!fs.existsSync(TEMP_DIR)) fs.mkdirSync(TEMP_DIR);
+
+// ----------------------------------------------
+// 📂 DATABASE FUNCTIONS
+// ----------------------------------------------
 function loadDB() {
     if (fs.existsSync(DB_PATH)) {
         return JSON.parse(fs.readFileSync(DB_PATH));
     }
-    return { users: {} };
+    return { users: {}, announcements: [] };
 }
 
 function saveDB(data) {
@@ -47,20 +32,7 @@ function saveDB(data) {
 }
 
 // ----------------------------------------------
-// 🌐 EXPRESS SERVER (Health checks)
-// ----------------------------------------------
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-app.get('/', (req, res) => res.send('OK'));
-app.get('/health', (req, res) => res.send('Bot is running'));
-
-app.listen(PORT, () => {
-    console.log(`✅ HTTP server running on port ${PORT}`);
-});
-
-// ----------------------------------------------
-// 🛠️ DOWNLOAD ENGINE
+// 🛠️ DOWNLOAD FUNCTION
 // ----------------------------------------------
 function downloadMedia(url, outputPath, type = 'audio') {
     return new Promise((resolve, reject) => {
@@ -83,344 +55,345 @@ function downloadMedia(url, outputPath, type = 'audio') {
 }
 
 // ----------------------------------------------
-// 🚀 BAILETS WHATSAPP CLIENT
+// 🚀 EXPRESS SERVER
 // ----------------------------------------------
-let sock = null;
-let pairingCodeRequested = false;
+const app = express();
+const PORT = process.env.PORT || 3000;
 
-async function startBot() {
-    // Load authentication state
-    const { state, saveCreds } = await useMultiFileAuthState(SESSION_DIR);
+app.use(express.json());
+app.use(express.static('public'));
 
-    // Create socket
-    sock = makeWASocket({
-        auth: state,
-        printQRInTerminal: true, // QR fallback if pairing fails
-        browser: ['Chrome (Linux)', 'Chrome', '120.0.0.0'],
-        markOnlineOnConnect: true,
-        syncFullHistory: false,
-    });
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
-    // Event: Connection update
-    sock.ev.on('connection.update', async (update) => {
-        const { connection, lastDisconnect, qr } = update;
+app.get('/health', (req, res) => res.send('OK'));
 
-        if (qr) {
-            console.log('📲 QR CODE GENERATED!');
-            console.log('📲 Scan with WhatsApp → Linked Devices → Link a Device');
+// ----------------------------------------------
+// 📨 CHAT API
+// ----------------------------------------------
+app.post('/api/chat', async (req, res) => {
+    const { userId, username, message } = req.body;
+    
+    if (!message) {
+        return res.json({ reply: '⚠️ Please enter a command or message.' });
+    }
+
+    const db = loadDB();
+    const userKey = userId || username || 'anonymous';
+    const isAdmin = (username === ADMIN_NAME) || (ADMIN_ID && userKey === ADMIN_ID);
+
+    // Initialize user if new
+    if (!db.users[userKey]) {
+        db.users[userKey] = { 
+            count: 0, 
+            username: username || 'User',
+            joined: new Date().toISOString()
+        };
+        saveDB(db);
+    } else {
+        if (username && db.users[userKey].username !== username) {
+            db.users[userKey].username = username;
+            saveDB(db);
         }
+    }
 
-        if (connection === 'close') {
-            const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
-            console.log(`❌ Connection closed. Reconnecting: ${shouldReconnect}`);
-            if (shouldReconnect) {
-                pairingCodeRequested = false;
-                startBot();
-            } else {
-                console.log('❌ Logged out. Delete session folder and restart.');
-            }
+    const user = db.users[userKey];
+    const isPremium = user.premium && user.expiry > Date.now();
+
+    // ----------------------------------------------
+    // 🧠 NON-COMMAND: Reply with profile
+    // ----------------------------------------------
+    if (!message.startsWith('.')) {
+        const remaining = isPremium ? '♾️ Unlimited' : Math.max(0, 4 - user.count);
+        const reply = `🤖 *with-us AI*\n\n` +
+            `👤 *User:* ${user.username || 'User'}\n` +
+            `🆔 *Your ID:* ${userKey}\n\n` +
+            `👨‍💻 *Developer:* Emmanuel Chimombo\n` +
+            `💼 *Title:* Full Stack System and Online Applications Developer\n` +
+            `🎓 *Education:* ICT Student, Mzuzu University\n\n` +
+            `📌 *Type .assist* to see all commands.\n` +
+            `📊 *Free downloads left:* ${remaining}`;
+        return res.json({ reply });
+    }
+
+    // ----------------------------------------------
+    // 👑 ADMIN: .users
+    // ----------------------------------------------
+    if (message === '.users' && isAdmin) {
+        const users = db.users;
+        const userList = Object.keys(users).map(key => {
+            const u = users[key];
+            const premium = u.premium && u.expiry > Date.now() ? '✅ Premium' : '❌ Free';
+            const remaining = premium === '✅ Premium' ? '♾️' : Math.max(0, 4 - u.count);
+            return `• *${u.username || 'User'}* (${key})\n  ${premium} | ${remaining} downloads left`;
+        }).join('\n\n');
+
+        const reply = `📊 *Registered Users (${Object.keys(users).length})*\n\n${userList || 'No users yet.'}`;
+        return res.json({ reply });
+    }
+
+    // ----------------------------------------------
+    // 👤 .id
+    // ----------------------------------------------
+    if (message === '.id') {
+        const remaining = isPremium ? '♾️ Unlimited' : Math.max(0, 4 - user.count);
+        const reply = `👤 *Your Profile*\n\n` +
+            `📌 *Username:* ${user.username || 'User'}\n` +
+            `🆔 *User ID:* ${userKey}\n` +
+            `📊 *Downloads left:* ${remaining}\n` +
+            `👑 *Admin:* ${isAdmin ? '✅ Yes' : '❌ No'}`;
+        return res.json({ reply });
+    }
+
+    // ----------------------------------------------
+    // 👑 ADMIN: .broadcast
+    // ----------------------------------------------
+    if (message.startsWith('.broadcast ') && isAdmin) {
+        const broadcastMsg = message.slice(11).trim();
+        if (!broadcastMsg) {
+            return res.json({ reply: '❌ Please provide a message to broadcast.' });
         }
+        if (!db.announcements) db.announcements = [];
+        db.announcements.push({
+            from: '📢 Admin',
+            message: broadcastMsg,
+            time: new Date().toISOString()
+        });
+        saveDB(db);
+        return res.json({
+            reply: `📢 *Announcement Sent!*\n\n"${broadcastMsg}"\n\n✅ All users will see this.`
+        });
+    }
 
-        if (connection === 'open') {
-            console.log(`✅ ${BOT_NAME} is ONLINE!`);
-            console.log(`👑 Admin: ${ADMIN_NUMBER}@s.whatsapp.net`);
-            console.log(`📢 Users get 4 free downloads.`);
-
-            // Send a welcome message to yourself (optional)
-            try {
-                await sock.sendMessage(`${ADMIN_NUMBER}@s.whatsapp.net`, { 
-                    text: `✅ ${BOT_NAME} is online! Send .assist for commands.` 
+    // ----------------------------------------------
+    // 👑 ADMIN: .upgrade
+    // ----------------------------------------------
+    if (message.startsWith('.upgrade ') && isAdmin) {
+        const parts = message.split(' ');
+        if (parts.length === 3) {
+            const targetUser = parts[1];
+            const days = parseInt(parts[2]);
+            if (!isNaN(days) && days > 0) {
+                if (!db.users[targetUser]) {
+                    return res.json({ reply: `❌ User "${targetUser}" not found. Use .users to see all users.` });
+                }
+                db.users[targetUser].premium = true;
+                db.users[targetUser].expiry = Date.now() + (days * 24 * 60 * 60 * 1000);
+                saveDB(db);
+                if (!db.announcements) db.announcements = [];
+                const targetName = db.users[targetUser].username || targetUser;
+                db.announcements.push({
+                    from: '🎉 System',
+                    message: `🎉 *${targetName}* (${targetUser}) was upgraded to Premium for ${days} days by Admin!`,
+                    time: new Date().toISOString()
                 });
-            } catch (err) {
-                console.log('Could not send welcome message (normal).');
-            }
-
-            // Request pairing code after connection opens
-            if (!pairingCodeRequested) {
-                pairingCodeRequested = true;
-                setTimeout(async () => {
-                    try {
-                        const code = await sock.requestPairingCode(ADMIN_NUMBER);
-                        console.log(`📱 PAIRING CODE: ${code}`);
-                        console.log(`📱 Open WhatsApp → Settings → Linked Devices → Link with Phone Number → Enter: ${code}`);
-                    } catch (err) {
-                        console.log('❌ Could not generate pairing code. Use QR code instead.');
-                    }
-                }, 3000);
+                saveDB(db);
+                return res.json({
+                    reply: `✅ ${targetName} (${targetUser}) upgraded for ${days} days!\n\n📢 Announcement sent to all users.`
+                });
+            } else {
+                return res.json({ reply: '❌ Invalid days. Usage: .upgrade <userId> <days>' });
             }
         }
-    });
+        return res.json({ reply: '❌ Usage: .upgrade <userId> <days>' });
+    }
 
-    // Event: Credentials updated (save session)
-    sock.ev.on('creds.update', saveCreds);
+    // ----------------------------------------------
+    // ℹ️ .assist
+    // ----------------------------------------------
+    if (message === '.assist') {
+        const helpText = `📖 *with-us AI - Command List*\n\n` +
+            `🎵 *.play <song name>* - Download audio (MP3) from YouTube\n` +
+            `🎬 *.vid <video name>* - Download video (MP4) from YouTube\n` +
+            `📹 *.dl <URL>* - Download from TikTok, Facebook, etc.\n` +
+            `👤 *.developer* - Show developer info\n` +
+            `🆔 *.id* - Show your user ID and profile\n` +
+            `📊 *.assist* - Show this help menu\n\n` +
+            `👑 *Admin commands:*\n` +
+            `  .users - List all registered users\n` +
+            `  .upgrade <userId> <days> - Upgrade a user\n` +
+            `  .broadcast <message> - Send announcement to all\n\n` +
+            `🔓 *Free users get 4 downloads.*`;
+        return res.json({ reply: helpText });
+    }
 
-    // Event: Incoming messages
-    sock.ev.on('messages.upsert', async ({ messages }) => {
-        const msg = messages[0];
-        if (!msg.message || msg.key.fromMe) return;
+    // ----------------------------------------------
+    // 👤 .developer
+    // ----------------------------------------------
+    if (message === '.developer') {
+        const devText = `👨‍💻 *Developer Profile*\n\n` +
+            `📌 *Name:* Emmanuel Chimombo\n` +
+            `💼 *Role:* Full Stack System and Online Applications Developer\n` +
+            `🎓 *Education:* ICT Student, Mzuzu University\n` +
+            `🌍 *Location:* Malawi\n\n` +
+            `🤖 *Bot:* with-us AI - Multi-platform media downloader.`;
+        return res.json({ reply: devText });
+    }
 
-        const sender = msg.key.remoteJid; // e.g., 265891011842@s.whatsapp.net
-        const senderNumber = sender.split('@')[0];
-        const body = msg.message.conversation || msg.message.extendedTextMessage?.text || '';
+    // ----------------------------------------------
+    // 🎵 .play
+    // ----------------------------------------------
+    if (message.startsWith('.play ')) {
+        const query = message.slice(6);
         
-        if (!body) return;
-
-        console.log(`📩 From ${senderNumber}: ${body}`);
-
-        // ----------------------------------------------
-        // 🧠 FALLBACK: Non-command replies with bot profile
-        // ----------------------------------------------
-        if (!body.startsWith('.')) {
-            const profileReply = `🤖 *${BOT_NAME}*\n\n` +
-                `👨‍💻 *Developer:* ${DEVELOPER_NAME}\n` +
-                `💼 *Title:* ${DEVELOPER_TITLE}\n` +
-                `🎓 *Education:* ${DEVELOPER_EDUCATION}\n\n` +
-                `📌 *Type .assist* to see all available commands.`;
-            await sock.sendMessage(sender, { text: profileReply });
-            return;
-        }
-
-        // ----------------------------------------------
-        // 👑 ADMIN: .upgrade <userId> <days>
-        // ----------------------------------------------
-        if (body.startsWith('.upgrade ') && senderNumber === ADMIN_NUMBER) {
-            const parts = body.split(' ');
-            if (parts.length === 3) {
-                const targetUser = parts[1];
-                const days = parseInt(parts[2]);
-                if (!isNaN(days) && days > 0) {
-                    const db = loadDB();
-                    // Ensure target user has @s.whatsapp.net
-                    const targetId = targetUser.includes('@') ? targetUser : targetUser + '@s.whatsapp.net';
-                    if (!db.users[targetId]) db.users[targetId] = { count: 0 };
-                    db.users[targetId].premium = true;
-                    db.users[targetId].expiry = Date.now() + (days * 24 * 60 * 60 * 1000);
-                    saveDB(db);
-                    await sock.sendMessage(sender, { text: `✅ User ${targetId} upgraded for ${days} days!` });
-                } else {
-                    await sock.sendMessage(sender, { text: '❌ Invalid days. Usage: .upgrade <userId> <days>' });
-                }
-            } else {
-                await sock.sendMessage(sender, { text: '❌ Usage: .upgrade <userId> <days>' });
-            }
-            return;
-        }
-
-        // ----------------------------------------------
-        // ℹ️ COMMAND: .assist
-        // ----------------------------------------------
-        if (body === '.assist') {
-            const helpText = `📖 *${BOT_NAME} - Command List*\n\n` +
-                `🎵 *.play <song name>* - Search and download audio (MP3) from YouTube.\n` +
-                `🎬 *.vid <video name>* - Search and download video (MP4) from YouTube (comedy, clips, etc.).\n` +
-                `📹 *.dl <URL>* - Download video from Facebook, TikTok, Instagram, Twitter, etc.\n` +
-                `📄 *.dl <document URL>* - Download any document (PDF, DOCX, etc.).\n` +
-                `👤 *.developer* - Show developer information.\n` +
-                `📊 *.assist* - Show this help menu.\n\n` +
-                `🔓 *Free users get 4 downloads total.* Ask the admin to upgrade for unlimited access.`;
-            await sock.sendMessage(sender, { text: helpText });
-            return;
-        }
-
-        // ----------------------------------------------
-        // 👤 COMMAND: .developer
-        // ----------------------------------------------
-        if (body === '.developer') {
-            const devText = `👨‍💻 *Developer Profile*\n\n` +
-                `📌 *Name:* ${DEVELOPER_NAME}\n` +
-                `💼 *Role:* ${DEVELOPER_TITLE}\n` +
-                `🎓 *Education:* ${DEVELOPER_EDUCATION}\n` +
-                `🌍 *Location:* Malawi\n\n` +
-                `🤖 *Bot:* ${BOT_NAME} - A multi-platform media downloader.`;
-            await sock.sendMessage(sender, { text: devText });
-            return;
-        }
-
-        // ----------------------------------------------
-        // 🎵 COMMAND: .play <song name>
-        // ----------------------------------------------
-        if (body.startsWith('.play ')) {
-            const query = body.slice(6);
-            const db = loadDB();
-            if (!db.users[sender]) db.users[sender] = { count: 0 };
-            const user = db.users[sender];
-            const isPremium = user.premium && user.expiry > Date.now();
-
-            if (!isPremium && user.count >= 4) {
-                await sock.sendMessage(sender, {
-                    text: `❌ *Free Limit Reached!*\nYou have used all 4 free downloads.\n` +
-                        `🆔 *Your User ID:* ${sender}\n` +
-                        `👑 Admin command: .upgrade ${senderNumber} 30`
-                });
-                return;
-            }
-
-            await sock.sendMessage(sender, {
-                text: `⏳ Searching for "${query}"... (${isPremium ? 'Premium' : user.count + 1 + '/4 Free'})`
+        if (!isPremium && user.count >= 4) {
+            return res.json({
+                reply: `❌ *Free Limit Reached!*\nYou've used all 4 free downloads.\n` +
+                    `🆔 *Your User ID:* ${userKey}\n` +
+                    `👑 Ask admin to upgrade you with: .upgrade ${userKey} 30`
             });
-
-            try {
-                const filePath = path.join(TEMP_DIR, `${Date.now()}.mp3`);
-                await downloadMedia(`ytsearch:${query}`, filePath, 'audio');
-
-                const audioBuffer = fs.readFileSync(filePath);
-                await sock.sendMessage(sender, {
-                    audio: audioBuffer,
-                    mimetype: 'audio/mp4',
-                    fileName: `${query}.mp3`
-                });
-
-                fs.unlinkSync(filePath);
-                if (!isPremium) {
-                    user.count += 1;
-                    saveDB(db);
-                }
-            } catch (error) {
-                await sock.sendMessage(sender, { text: '❌ Error: Song not found or download failed.' });
-                console.error(error);
-            }
-            return;
         }
 
-        // ----------------------------------------------
-        // 🎬 COMMAND: .vid <video name>
-        // ----------------------------------------------
-        if (body.startsWith('.vid ')) {
-            const query = body.slice(5);
-            const db = loadDB();
-            if (!db.users[sender]) db.users[sender] = { count: 0 };
-            const user = db.users[sender];
-            const isPremium = user.premium && user.expiry > Date.now();
+        try {
+            const filePath = path.join(TEMP_DIR, `${Date.now()}.mp3`);
+            await downloadMedia(`ytsearch:${query}`, filePath, 'audio');
 
-            if (!isPremium && user.count >= 4) {
-                await sock.sendMessage(sender, {
-                    text: `❌ *Free Limit Reached!*\nYou have used all 4 free downloads.\n` +
-                        `🆔 *Your User ID:* ${sender}\n` +
-                        `👑 Admin command: .upgrade ${senderNumber} 30`
-                });
-                return;
+            const downloadUrl = `/download/${path.basename(filePath)}`;
+            
+            if (!isPremium) {
+                user.count += 1;
+                saveDB(db);
             }
 
-            await sock.sendMessage(sender, {
-                text: `⏳ Searching for video "${query}"... (${isPremium ? 'Premium' : user.count + 1 + '/4 Free'})`
+            return res.json({
+                reply: `✅ *Download Ready!*\n🎵 *${query}*\n\n` +
+                    `📥 [Download MP3](${downloadUrl})\n` +
+                    `📊 *Downloads left:* ${isPremium ? '♾️ Unlimited' : Math.max(0, 4 - user.count)}`,
+                downloadUrl: downloadUrl
             });
-
-            try {
-                const filePath = path.join(TEMP_DIR, `${Date.now()}.mp4`);
-                await downloadMedia(`ytsearch:${query}`, filePath, 'video');
-
-                const stats = fs.statSync(filePath);
-                const fileSizeMB = stats.size / (1024 * 1024);
-
-                if (fileSizeMB > 64) {
-                    await sock.sendMessage(sender, { text: `❌ Video is too large (${fileSizeMB.toFixed(1)}MB). WhatsApp limit is 64MB.` });
-                    fs.unlinkSync(filePath);
-                    return;
-                }
-
-                const videoBuffer = fs.readFileSync(filePath);
-                await sock.sendMessage(sender, {
-                    video: videoBuffer,
-                    mimetype: 'video/mp4',
-                    fileName: `${query}.mp4`
-                });
-
-                fs.unlinkSync(filePath);
-                if (!isPremium) {
-                    user.count += 1;
-                    saveDB(db);
-                }
-            } catch (error) {
-                await sock.sendMessage(sender, { text: '❌ Error: Video not found or download failed.' });
-                console.error(error);
-            }
-            return;
+        } catch (error) {
+            return res.json({ reply: '❌ Error: Song not found or download failed.' });
         }
+    }
 
-        // ----------------------------------------------
-        // 📹 COMMAND: .dl <URL>
-        // ----------------------------------------------
-        if (body.startsWith('.dl ')) {
-            const url = body.slice(4).trim();
-            if (!url || !url.startsWith('http')) {
-                await sock.sendMessage(sender, { text: '❌ Please provide a valid URL. Example: .dl https://www.tiktok.com/@user/video/123' });
-                return;
-            }
-
-            const db = loadDB();
-            if (!db.users[sender]) db.users[sender] = { count: 0 };
-            const user = db.users[sender];
-            const isPremium = user.premium && user.expiry > Date.now();
-
-            if (!isPremium && user.count >= 4) {
-                await sock.sendMessage(sender, {
-                    text: `❌ *Free Limit Reached!*\nYou have used all 4 free downloads.\n` +
-                        `🆔 *Your User ID:* ${sender}\n` +
-                        `👑 Admin command: .upgrade ${senderNumber} 30`
-                });
-                return;
-            }
-
-            await sock.sendMessage(sender, {
-                text: `⏳ Downloading from URL... (${isPremium ? 'Premium' : user.count + 1 + '/4 Free'})`
+    // ----------------------------------------------
+    // 🎬 .vid
+    // ----------------------------------------------
+    if (message.startsWith('.vid ')) {
+        const query = message.slice(5);
+        
+        if (!isPremium && user.count >= 4) {
+            return res.json({
+                reply: `❌ *Free Limit Reached!*\nYou've used all 4 free downloads.\n` +
+                    `🆔 *Your User ID:* ${userKey}\n` +
+                    `👑 Ask admin to upgrade you with: .upgrade ${userKey} 30`
             });
-
-            try {
-                const ext = '.mp4';
-                const filePath = path.join(TEMP_DIR, `${Date.now()}${ext}`);
-                await downloadMedia(url, filePath, 'video');
-
-                const stats = fs.statSync(filePath);
-                const fileSizeMB = stats.size / (1024 * 1024);
-
-                if (fileSizeMB > 64) {
-                    await sock.sendMessage(sender, { text: `❌ File is too large (${fileSizeMB.toFixed(1)}MB). WhatsApp limit is 64MB.` });
-                    fs.unlinkSync(filePath);
-                    return;
-                }
-
-                const extName = path.extname(filePath).toLowerCase() || '.mp4';
-                const fileBuffer = fs.readFileSync(filePath);
-
-                if (['.mp4', '.webm', '.mkv', '.avi', '.mov'].includes(extName)) {
-                    await sock.sendMessage(sender, {
-                        video: fileBuffer,
-                        mimetype: 'video/mp4',
-                        fileName: `video_${Date.now()}${extName}`
-                    });
-                } else if (['.pdf', '.docx', '.doc', '.txt', '.xlsx', '.pptx'].includes(extName)) {
-                    await sock.sendMessage(sender, {
-                        document: fileBuffer,
-                        mimetype: 'application/octet-stream',
-                        fileName: `file_${Date.now()}${extName}`
-                    });
-                } else {
-                    await sock.sendMessage(sender, {
-                        document: fileBuffer,
-                        mimetype: 'application/octet-stream',
-                        fileName: `download_${Date.now()}${extName}`
-                    });
-                }
-
-                fs.unlinkSync(filePath);
-                if (!isPremium) {
-                    user.count += 1;
-                    saveDB(db);
-                }
-            } catch (error) {
-                await sock.sendMessage(sender, { text: '❌ Failed to download from that URL. It might be private, unsupported, or invalid.' });
-                console.error(error);
-            }
-            return;
         }
-    });
 
-    return sock;
-}
+        try {
+            const filePath = path.join(TEMP_DIR, `${Date.now()}.mp4`);
+            await downloadMedia(`ytsearch:${query}`, filePath, 'video');
+
+            const stats = fs.statSync(filePath);
+            const fileSizeMB = stats.size / (1024 * 1024);
+
+            if (fileSizeMB > 64) {
+                fs.unlinkSync(filePath);
+                return res.json({ reply: `❌ Video is too large (${fileSizeMB.toFixed(1)}MB). Limit is 64MB.` });
+            }
+
+            const downloadUrl = `/download/${path.basename(filePath)}`;
+            
+            if (!isPremium) {
+                user.count += 1;
+                saveDB(db);
+            }
+
+            return res.json({
+                reply: `✅ *Download Ready!*\n🎬 *${query}*\n\n` +
+                    `📥 [Download MP4](${downloadUrl})\n` +
+                    `📊 *Downloads left:* ${isPremium ? '♾️ Unlimited' : Math.max(0, 4 - user.count)}`,
+                downloadUrl: downloadUrl
+            });
+        } catch (error) {
+            return res.json({ reply: '❌ Error: Video not found or download failed.' });
+        }
+    }
+
+    // ----------------------------------------------
+    // 📹 .dl
+    // ----------------------------------------------
+    if (message.startsWith('.dl ')) {
+        const url = message.slice(4).trim();
+        if (!url || !url.startsWith('http')) {
+            return res.json({ reply: '❌ Please provide a valid URL.' });
+        }
+
+        if (!isPremium && user.count >= 4) {
+            return res.json({
+                reply: `❌ *Free Limit Reached!*\nYou've used all 4 free downloads.\n` +
+                    `🆔 *Your User ID:* ${userKey}\n` +
+                    `👑 Ask admin to upgrade you with: .upgrade ${userKey} 30`
+            });
+        }
+
+        try {
+            const filePath = path.join(TEMP_DIR, `${Date.now()}.mp4`);
+            await downloadMedia(url, filePath, 'video');
+
+            const stats = fs.statSync(filePath);
+            const fileSizeMB = stats.size / (1024 * 1024);
+
+            if (fileSizeMB > 64) {
+                fs.unlinkSync(filePath);
+                return res.json({ reply: `❌ File is too large (${fileSizeMB.toFixed(1)}MB). Limit is 64MB.` });
+            }
+
+            const downloadUrl = `/download/${path.basename(filePath)}`;
+            
+            if (!isPremium) {
+                user.count += 1;
+                saveDB(db);
+            }
+
+            return res.json({
+                reply: `✅ *Download Ready!*\n📥 [Download File](${downloadUrl})\n` +
+                    `📊 *Downloads left:* ${isPremium ? '♾️ Unlimited' : Math.max(0, 4 - user.count)}`,
+                downloadUrl: downloadUrl
+            });
+        } catch (error) {
+            return res.json({ reply: '❌ Failed to download. URL might be private or unsupported.' });
+        }
+    }
+
+    // ----------------------------------------------
+    // UNKNOWN COMMAND
+    // ----------------------------------------------
+    return res.json({ reply: '❌ Unknown command. Type .assist for help.' });
+});
 
 // ----------------------------------------------
-// ▶️ START THE BOT
+// 📥 DOWNLOAD ENDPOINT
 // ----------------------------------------------
-console.log('🚀 Starting bot...');
-console.log('📱 Pairing code will appear in logs after connection.');
-startBot().catch(console.error);
+app.get('/download/:filename', (req, res) => {
+    const filePath = path.join(TEMP_DIR, req.params.filename);
+    if (fs.existsSync(filePath)) {
+        res.download(filePath, (err) => {
+            if (!err) {
+                setTimeout(() => {
+                    try { fs.unlinkSync(filePath); } catch (e) {}
+                }, 5000);
+            }
+        });
+    } else {
+        res.status(404).send('File not found.');
+    }
+});
+
+// ----------------------------------------------
+// 📢 GET ANNOUNCEMENTS
+// ----------------------------------------------
+app.get('/api/announcements', (req, res) => {
+    const db = loadDB();
+    const announcements = db.announcements || [];
+    res.json({ announcements });
+});
+
+// ----------------------------------------------
+// ▶️ START
+// ----------------------------------------------
+app.listen(PORT, () => {
+    console.log(`✅ with-us AI Chat running on port ${PORT}`);
+    console.log(`🌐 Open: https://withus.onrender.com`);
+});
