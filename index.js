@@ -6,7 +6,7 @@ const path = require('path');
 // ----------------------------------------------
 // 📌 CONFIGURATION
 // ----------------------------------------------
-const ADMIN_NAME = 'Emmanuel'; // <--- CHANGE THIS TO YOUR NAME
+const ADMIN_NAME = 'godrisemeup'; // <--- CHANGE THIS TO YOUR NAME
 const ADMIN_ID = null; // Leave null or set your user ID
 
 // ----------------------------------------------
@@ -111,7 +111,7 @@ app.post('/api/chat', async (req, res) => {
             `🆔 *Your ID:* ${userKey}\n\n` +
             `👨‍💻 *Developer:* Emmanuel Chimombo\n` +
             `💼 *Title:* Full Stack System and Online Applications Developer\n` +
-            `🎓 *Education:* ICT Student, Mzuzu University\n\n` +
+            `🎓 *Education:* Education in ICT student, Mzuzu University\n\n` +
             `📌 *Type .assist* to see all commands.\n` +
             `📊 *Free downloads left:* ${remaining}`;
         return res.json({ reply });
