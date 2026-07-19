@@ -6,8 +6,8 @@ const path = require('path');
 // ----------------------------------------------
 // 📌 CONFIGURATION
 // ----------------------------------------------
-const ADMIN_NAME = 'godrisemeup'; // <--- CHANGE THIS TO YOUR NAME
-const ADMIN_ID = null; // Leave null or set your user ID
+const ADMIN_NAME = 'Emmanuel'; // <--- CHANGE THIS TO YOUR NAME
+const ADMIN_ID = null;
 
 // ----------------------------------------------
 // 📂 SETUP
@@ -32,22 +32,25 @@ function saveDB(data) {
 }
 
 // ----------------------------------------------
-// 🛠️ DOWNLOAD FUNCTION
+// 🛠️ DOWNLOAD FUNCTION (with better error logging)
 // ----------------------------------------------
 function downloadMedia(url, outputPath, type = 'audio') {
     return new Promise((resolve, reject) => {
         let command;
         if (type === 'audio') {
-            command = `yt-dlp -f bestaudio --extract-audio --audio-format mp3 -o "${outputPath}" "${url}"`;
+            command = `yt-dlp -f bestaudio --extract-audio --audio-format mp3 --no-check-certificate -o "${outputPath}" "ytsearch:${url}"`;
         } else {
-            command = `yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 -o "${outputPath}" "${url}"`;
+            command = `yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 --no-check-certificate -o "${outputPath}" "ytsearch:${url}"`;
         }
+
+        console.log(`🔍 Running: ${command}`);
 
         exec(command, (error, stdout, stderr) => {
             if (error) {
-                console.error(`yt-dlp error: ${stderr}`);
-                reject(new Error('Download failed.'));
+                console.error(`❌ yt-dlp error: ${stderr}`);
+                reject(new Error(`Download failed: ${stderr || error.message}`));
             } else {
+                console.log(`✅ Download complete: ${outputPath}`);
                 resolve(outputPath);
             }
         });
@@ -83,7 +86,6 @@ app.post('/api/chat', async (req, res) => {
     const userKey = userId || username || 'anonymous';
     const isAdmin = (username === ADMIN_NAME) || (ADMIN_ID && userKey === ADMIN_ID);
 
-    // Initialize user if new
     if (!db.users[userKey]) {
         db.users[userKey] = { 
             count: 0, 
@@ -102,7 +104,7 @@ app.post('/api/chat', async (req, res) => {
     const isPremium = user.premium && user.expiry > Date.now();
 
     // ----------------------------------------------
-    // 🧠 NON-COMMAND: Reply with profile
+    // 🧠 NON-COMMAND
     // ----------------------------------------------
     if (!message.startsWith('.')) {
         const remaining = isPremium ? '♾️ Unlimited' : Math.max(0, 4 - user.count);
@@ -111,7 +113,7 @@ app.post('/api/chat', async (req, res) => {
             `🆔 *Your ID:* ${userKey}\n\n` +
             `👨‍💻 *Developer:* Emmanuel Chimombo\n` +
             `💼 *Title:* Full Stack System and Online Applications Developer\n` +
-            `🎓 *Education:* Education in ICT student, Mzuzu University\n\n` +
+            `🎓 *Education:* ICT Student, Mzuzu University\n\n` +
             `📌 *Type .assist* to see all commands.\n` +
             `📊 *Free downloads left:* ${remaining}`;
         return res.json({ reply });
@@ -232,7 +234,7 @@ app.post('/api/chat', async (req, res) => {
     }
 
     // ----------------------------------------------
-    // 🎵 .play
+    // 🎵 .play <song>
     // ----------------------------------------------
     if (message.startsWith('.play ')) {
         const query = message.slice(6);
@@ -247,7 +249,7 @@ app.post('/api/chat', async (req, res) => {
 
         try {
             const filePath = path.join(TEMP_DIR, `${Date.now()}.mp3`);
-            await downloadMedia(`ytsearch:${query}`, filePath, 'audio');
+            await downloadMedia(query, filePath, 'audio');
 
             const downloadUrl = `/download/${path.basename(filePath)}`;
             
@@ -263,12 +265,13 @@ app.post('/api/chat', async (req, res) => {
                 downloadUrl: downloadUrl
             });
         } catch (error) {
-            return res.json({ reply: '❌ Error: Song not found or download failed.' });
+            console.error('Play error:', error);
+            return res.json({ reply: `❌ Error: ${error.message || 'Song not found or download failed.'}` });
         }
     }
 
     // ----------------------------------------------
-    // 🎬 .vid
+    // 🎬 .vid <video>
     // ----------------------------------------------
     if (message.startsWith('.vid ')) {
         const query = message.slice(5);
@@ -283,7 +286,7 @@ app.post('/api/chat', async (req, res) => {
 
         try {
             const filePath = path.join(TEMP_DIR, `${Date.now()}.mp4`);
-            await downloadMedia(`ytsearch:${query}`, filePath, 'video');
+            await downloadMedia(query, filePath, 'video');
 
             const stats = fs.statSync(filePath);
             const fileSizeMB = stats.size / (1024 * 1024);
@@ -307,12 +310,13 @@ app.post('/api/chat', async (req, res) => {
                 downloadUrl: downloadUrl
             });
         } catch (error) {
-            return res.json({ reply: '❌ Error: Video not found or download failed.' });
+            console.error('Video error:', error);
+            return res.json({ reply: `❌ Error: ${error.message || 'Video not found or download failed.'}` });
         }
     }
 
     // ----------------------------------------------
-    // 📹 .dl
+    // 📹 .dl <URL>
     // ----------------------------------------------
     if (message.startsWith('.dl ')) {
         const url = message.slice(4).trim();
@@ -330,7 +334,19 @@ app.post('/api/chat', async (req, res) => {
 
         try {
             const filePath = path.join(TEMP_DIR, `${Date.now()}.mp4`);
-            await downloadMedia(url, filePath, 'video');
+            // For direct URLs, we don't use ytsearch:
+            const command = `yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 --no-check-certificate -o "${filePath}" "${url}"`;
+            console.log(`🔍 Running: ${command}`);
+            await new Promise((resolve, reject) => {
+                exec(command, (error, stdout, stderr) => {
+                    if (error) {
+                        console.error(`❌ yt-dlp error: ${stderr}`);
+                        reject(new Error(stderr || error.message));
+                    } else {
+                        resolve(filePath);
+                    }
+                });
+            });
 
             const stats = fs.statSync(filePath);
             const fileSizeMB = stats.size / (1024 * 1024);
@@ -353,7 +369,8 @@ app.post('/api/chat', async (req, res) => {
                 downloadUrl: downloadUrl
             });
         } catch (error) {
-            return res.json({ reply: '❌ Failed to download. URL might be private or unsupported.' });
+            console.error('DL error:', error);
+            return res.json({ reply: `❌ Failed to download: ${error.message || 'URL might be private or unsupported.'}` });
         }
     }
 
@@ -374,6 +391,8 @@ app.get('/download/:filename', (req, res) => {
                 setTimeout(() => {
                     try { fs.unlinkSync(filePath); } catch (e) {}
                 }, 5000);
+            } else {
+                console.error('Download error:', err);
             }
         });
     } else {
