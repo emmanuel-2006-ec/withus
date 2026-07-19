@@ -1,20 +1,22 @@
-FROM node:18
+FROM node:18-slim
 
 # Install FFmpeg and yt-dlp
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     python3 \
     python3-pip \
-    yt-dlp \
     && rm -rf /var/lib/apt/lists/*
+
+# Install yt-dlp via pip
+RUN pip3 install yt-dlp --break-system-packages
 
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install
+RUN npm install --legacy-peer-deps
 
 COPY . .
 
 EXPOSE 3000
 
-CMD ["node", "index.js"]D
+CMD ["node", "index.js"]
