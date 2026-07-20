@@ -5,3 +5,6 @@ temp_downloads/
 .DS_Store
 *.log
 .env
+*.session
+.wwebjs_auth/
+session/
