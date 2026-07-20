@@ -32,44 +32,59 @@ function saveDB(data) {
 }
 
 // ----------------------------------------------
-// 🛠️ DOWNLOAD FUNCTION
+// 🛠️ DOWNLOAD FUNCTION (Triple-Search Engine)
 // ----------------------------------------------
 function downloadMedia(query, outputPath, type = 'audio') {
     return new Promise((resolve, reject) => {
-        let command;
-        if (type === 'audio') {
-            command = `yt-dlp -f bestaudio --extract-audio --audio-format mp3 --no-check-certificate -o "${outputPath}" "https://www.dailymotion.com/search/${encodeURIComponent(query)}"`;
-        } else {
-            command = `yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 --no-check-certificate -o "${outputPath}" "https://www.dailymotion.com/search/${encodeURIComponent(query)}"`;
+        // Search Sources: TikTok -> Dailymotion -> YouTube (Mobile)
+        const sources = [
+            { 
+                name: 'TikTok', 
+                prefix: `tiksearch:${query}`, 
+                args: '' 
+            },
+            { 
+                name: 'Dailymotion', 
+                prefix: `dmsearch:${query}`, 
+                args: '' 
+            },
+            { 
+                name: 'YouTube (Mobile)', 
+                prefix: `ytsearch:${query}`, 
+                args: '--extractor-args "youtube:player_client=android,mweb"' 
+            }
+        ];
+
+        let currentIndex = 0;
+
+        function tryNextSource() {
+            if (currentIndex >= sources.length) {
+                return reject(new Error(`No results found for "${query}". Try using .dl with a direct link.`));
+            }
+
+            const source = sources[currentIndex];
+            currentIndex++;
+            console.log(`🔍 Searching ${source.name} for: ${query}`);
+
+            let command;
+            if (type === 'audio') {
+                command = `yt-dlp ${source.args} -f bestaudio --extract-audio --audio-format mp3 --no-check-certificate -o "${outputPath}" "${source.prefix}"`;
+            } else {
+                command = `yt-dlp ${source.args} -f bestvideo+bestaudio --merge-output-format mp4 --no-check-certificate -o "${outputPath}" "${source.prefix}"`;
+            }
+
+            exec(command, (error, stdout, stderr) => {
+                if (error) {
+                    console.log(`❌ ${source.name} failed. Trying next...`);
+                    tryNextSource();
+                } else {
+                    console.log(`✅ Download complete from ${source.name}: ${outputPath}`);
+                    resolve(outputPath);
+                }
+            });
         }
 
-        console.log(`🔍 Searching Dailymotion: ${query}`);
-
-        exec(command, (error, stdout, stderr) => {
-            if (error) {
-                console.error(`❌ Dailymotion failed: ${stderr}`);
-                // Fallback to YouTube
-                const cookieOption = fs.existsSync('./cookies.txt') ? '--cookies ./cookies.txt' : '';
-                let fallbackCommand;
-                if (type === 'audio') {
-                    fallbackCommand = `yt-dlp ${cookieOption} -f bestaudio --extract-audio --audio-format mp3 --no-check-certificate -o "${outputPath}" "ytsearch:${query}"`;
-                } else {
-                    fallbackCommand = `yt-dlp ${cookieOption} -f bestvideo+bestaudio --merge-output-format mp4 --no-check-certificate -o "${outputPath}" "ytsearch:${query}"`;
-                }
-                exec(fallbackCommand, (fbError, fbStdout, fbStderr) => {
-                    if (fbError) {
-                        console.error(`❌ YouTube fallback failed: ${fbStderr}`);
-                        reject(new Error(`No results found for "${query}".`));
-                    } else {
-                        console.log(`✅ Download complete: ${outputPath}`);
-                        resolve(outputPath);
-                    }
-                });
-            } else {
-                console.log(`✅ Download complete: ${outputPath}`);
-                resolve(outputPath);
-            }
-        });
+        tryNextSource();
     });
 }
 
@@ -218,18 +233,18 @@ app.post('/api/chat', async (req, res) => {
     }
 
     // ----------------------------------------------
-    // ℹ️ .assist
+    // ℹ️ .assist (Updated with clear instructions)
     // ----------------------------------------------
     if (message === '.assist') {
         const helpText = `📖 *with-us AI - Command List*\n\n` +
-            `🎵 *.play <song name>* - Download audio (MP3)\n` +
-            `🎬 *.vid <video name>* - Download video (MP4)\n` +
-            `📹 *.dl <URL>* - Download from any platform\n` +
-            `👤 *.developer* - Show developer info\n` +
-            `🆔 *.id* - Show your user ID\n` +
-            `📊 *.assist* - Show this menu\n\n` +
-            `👑 *Admin commands:* .users, .upgrade, .broadcast\n\n` +
-            `🔓 *Free users get 4 downloads.*`;
+            `🎵 *.play <song>* - Searches TikTok/Dailymotion/YouTube for audio (MP3).\n` +
+            `🎬 *.vid <video>* - Searches TikTok/Dailymotion/YouTube for video (MP4).\n` +
+            `📹 *.dl <URL>* - ⭐ *BEST OPTION* Download directly from ANY site (YouTube, TikTok, Instagram, etc.).\n` +
+            `👤 *.developer* - Show developer info.\n` +
+            `🆔 *.id* - Show your user ID.\n` +
+            `📊 *.assist* - Show this menu.\n\n` +
+            `👑 *Admin Commands:* .users, .upgrade, .broadcast\n\n` +
+            `💡 *Tip:* If .play/.vid fail, use .dl with the video link (YouTube/TikTok) – it always works!`;
         return res.json({ reply: helpText });
     }
 
@@ -242,12 +257,12 @@ app.post('/api/chat', async (req, res) => {
             `💼 *Role:* Full Stack System and Online Applications Developer\n` +
             `🎓 *Education:* ICT Student, Mzuzu University\n` +
             `🌍 *Location:* Malawi\n\n` +
-            `🤖 *Bot:* with-us AI - Media downloader.`;
+            `🤖 *Bot:* with-us AI - Universal Media Downloader.`;
         return res.json({ reply: devText });
     }
 
     // ----------------------------------------------
-    // 🎵 .play <song> (Auto-Download)
+    // 🎵 .play (Now searches TikTok -> Dailymotion -> YouTube)
     // ----------------------------------------------
     if (message.startsWith('.play ')) {
         const query = message.slice(6);
@@ -264,7 +279,6 @@ app.post('/api/chat', async (req, res) => {
             const filePath = path.join(TEMP_DIR, `${Date.now()}.mp3`);
             await downloadMedia(query, filePath, 'audio');
 
-            // Read file as base64
             const fileBuffer = fs.readFileSync(filePath);
             const base64File = fileBuffer.toString('base64');
             
@@ -272,11 +286,8 @@ app.post('/api/chat', async (req, res) => {
                 user.count += 1;
                 saveDB(db);
             }
-
-            // Delete file after reading
             fs.unlinkSync(filePath);
 
-            // Return the file directly
             return res.json({
                 action: 'download',
                 filename: `${query}.mp3`,
@@ -286,12 +297,12 @@ app.post('/api/chat', async (req, res) => {
             });
         } catch (error) {
             console.error('Play error:', error);
-            return res.json({ reply: `❌ Error: ${error.message || 'Could not find or download.'}` });
+            return res.json({ reply: `❌ ${error.message || 'Could not find or download.'}` });
         }
     }
 
     // ----------------------------------------------
-    // 🎬 .vid <video> (Auto-Download)
+    // 🎬 .vid (Now searches TikTok -> Dailymotion -> YouTube)
     // ----------------------------------------------
     if (message.startsWith('.vid ')) {
         const query = message.slice(5);
@@ -323,7 +334,6 @@ app.post('/api/chat', async (req, res) => {
                 user.count += 1;
                 saveDB(db);
             }
-
             fs.unlinkSync(filePath);
 
             return res.json({
@@ -335,12 +345,12 @@ app.post('/api/chat', async (req, res) => {
             });
         } catch (error) {
             console.error('Video error:', error);
-            return res.json({ reply: `❌ Error: ${error.message || 'Could not find or download.'}` });
+            return res.json({ reply: `❌ ${error.message || 'Could not find or download.'}` });
         }
     }
 
     // ----------------------------------------------
-    // 📹 .dl <URL> (Auto-Download)
+    // 📹 .dl <URL> (BEST OPTION - ALWAYS WORKS)
     // ----------------------------------------------
     if (message.startsWith('.dl ')) {
         const url = message.slice(4).trim();
@@ -358,9 +368,9 @@ app.post('/api/chat', async (req, res) => {
 
         try {
             const filePath = path.join(TEMP_DIR, `${Date.now()}.mp4`);
-            const cookieOption = fs.existsSync('./cookies.txt') ? '--cookies ./cookies.txt' : '';
-            const command = `yt-dlp ${cookieOption} -f bestvideo+bestaudio --merge-output-format mp4 --no-check-certificate -o "${filePath}" "${url}"`;
-            console.log(`🔍 Running: ${command}`);
+            // Direct download uses yt-dlp with no search, just the raw URL.
+            const command = `yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 --no-check-certificate -o "${filePath}" "${url}"`;
+            console.log(`🔍 Running direct DL: ${command}`);
             
             await new Promise((resolve, reject) => {
                 exec(command, (error, stdout, stderr) => {
@@ -388,10 +398,9 @@ app.post('/api/chat', async (req, res) => {
                 user.count += 1;
                 saveDB(db);
             }
-
             fs.unlinkSync(filePath);
 
-            const ext = path.extname(url).toLowerCase() || '.mp4';
+            const ext = path.extname(url).split('?')[0] || '.mp4';
             return res.json({
                 action: 'download',
                 filename: `video_${Date.now()}${ext}`,
@@ -409,6 +418,26 @@ app.post('/api/chat', async (req, res) => {
     // UNKNOWN COMMAND
     // ----------------------------------------------
     return res.json({ reply: '❌ Unknown command. Type .assist for help.' });
+});
+
+// ----------------------------------------------
+// 📥 DOWNLOAD ENDPOINT (Fallback for direct browser requests)
+// ----------------------------------------------
+app.get('/download/:filename', (req, res) => {
+    const filePath = path.join(TEMP_DIR, req.params.filename);
+    if (fs.existsSync(filePath)) {
+        res.download(filePath, (err) => {
+            if (!err) {
+                setTimeout(() => {
+                    try { fs.unlinkSync(filePath); } catch (e) {}
+                }, 5000);
+            } else {
+                console.error('Download error:', err);
+            }
+        });
+    } else {
+        res.status(404).send('File not found.');
+    }
 });
 
 // ----------------------------------------------
