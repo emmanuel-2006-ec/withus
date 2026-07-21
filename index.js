@@ -2,7 +2,6 @@ const express = require('express');
 const fs = require('fs');
 const { exec } = require('child_process');
 const path = require('path');
-const https = require('https');
 
 // ----------------------------------------------
 // 📌 CONFIGURATION
@@ -10,11 +9,8 @@ const https = require('https');
 const ADMIN_NAME = 'Emmanuel@1';
 const ADMIN_ID = null;
 
-// 🔑 GOOGLE GEMINI API KEY (Inserted)
-const GEMINI_API_KEY = 'AQ.Ab8RN6Ltd3nd8iDtj-iVdLrENtMsm6wUwqmBneZ_WRKkkxiXbA';
-
-// 🍪 SPOTIFY COOKIE (Leave empty if not using)
-const SPOTIFY_COOKIE = '';
+// 🔑 HUGGING FACE API KEY
+const HF_API_KEY = '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'; // Your key
 
 // ----------------------------------------------
 // 📂 SETUP
@@ -36,7 +32,7 @@ function saveDB(data) {
 }
 
 // ----------------------------------------------
-// 🛠️ REAL AI ASSIGNMENT WRITER (Google Gemini)
+// 🛠️ AI ASSIGNMENT WRITER (Hugging Face)
 // ----------------------------------------------
 async function generateAIAssignment(topic, field, pages = 3, citations = 'yes') {
     const prompt = `Write a detailed academic assignment on the topic: "${topic}" in the field of "${field}".
@@ -47,41 +43,47 @@ Requirements:
 - Citations: ${citations === 'yes' ? 'Include APA in-text citations and a reference list at the end' : 'No citations needed'}
 - Content should be original, well-researched, and comprehensive
 - Include introduction, body paragraphs with topic sentences, and conclusion
-- Answer the question thoroughly with real examples and explanations
 
 Format the response with:
 1. Introduction
-2. Main body (with clear sections and subheadings)
+2. Main body (with clear sections)
 3. Conclusion
-4. References (if citations are requested)
-
-The assignment should be written in a clear, academic style that demonstrates deep understanding of the subject.`;
+4. References (if citations are requested)`;
 
     try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`, {
+        const response = await fetch('https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Authorization': `Bearer ${HF_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
             body: JSON.stringify({
-                contents: [{
-                    parts: [{ text: prompt }]
-                }],
-                generationConfig: {
+                inputs: prompt,
+                parameters: {
+                    max_new_tokens: 2000,
                     temperature: 0.7,
-                    maxOutputTokens: 2048,
                 }
             })
         });
 
         const data = await response.json();
-        
+
         if (data.error) {
-            console.error('Gemini API Error:', data.error);
-            return `❌ API Error: ${data.error.message}\n\nPlease check your Gemini API key and try again.`;
+            if (data.error.includes('loading')) {
+                return `⏳ *The AI model is waking up...*\n\nPlease try again in 2-3 minutes. 🚀`;
+            }
+            return `❌ API Error: ${data.error.message || data.error}`;
         }
 
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No content generated.';
-        
-        // Format the response for the chat
+        let text = '';
+        if (Array.isArray(data) && data[0]?.generated_text) {
+            text = data[0].generated_text.replace(prompt, '').trim();
+        } else if (data.generated_text) {
+            text = data.generated_text.replace(prompt, '').trim();
+        } else {
+            text = 'No content generated.';
+        }
+
         let formatted = `📚 *ASSIGNMENT: ${topic.toUpperCase()}*\n\n`;
         formatted += `📖 *Field:* ${field || 'General Studies'}\n`;
         formatted += `📄 *Pages:* ${pages}\n`;
@@ -89,54 +91,37 @@ The assignment should be written in a clear, academic style that demonstrates de
         formatted += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
         formatted += text;
         formatted += `\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
-        formatted += `✅ Assignment generated using with us AI w AI\n`;
-        formatted += `📌 *Note:* This is AI-generated content. Please review and edit as needed.`;
+        formatted += `✅ Generated using Hugging Face AI (Mistral-7B)`;
 
         return formatted;
     } catch (error) {
-        console.error('AI Assignment Error:', error);
-        return `❌ Failed to generate assignment: ${error.message}\n\nPlease try again later.`;
+        console.error('AI Error:', error);
+        return `❌ Failed to generate assignment: ${error.message}`;
     }
 }
 
 // ----------------------------------------------
-// 🛠️ SEARCH FUNCTION (TikTok + Dailymotion)
+// 🛠️ SEARCH FUNCTION (Facebook)
 // ----------------------------------------------
-function searchAndDownload(query, outputPath, type = 'video') {
+function searchFacebook(query, outputPath, type = 'video') {
     return new Promise((resolve, reject) => {
-        const sources = [
-            { name: 'TikTok', prefix: `tiksearch:${query}` },
-            { name: 'Dailymotion', prefix: `dmsearch:${query}` }
-        ];
+        // Search Facebook using yt-dlp's built-in extractor
+        const searchUrl = `https://www.facebook.com/search/videos/?q=${encodeURIComponent(query)}`;
+        const typeArg = type === 'audio' ? 'bestaudio --extract-audio --audio-format mp3' : 'bestvideo+bestaudio --merge-output-format mp4';
+        const command = `yt-dlp -f ${typeArg} --no-check-certificate --no-playlist --max-downloads 1 -o "${outputPath}" "${searchUrl}"`;
 
-        let currentIndex = 0;
+        console.log(`🔍 Searching Facebook for: ${query}`);
+        console.log(`🔍 Running: ${command}`);
 
-        function tryNextSource() {
-            if (currentIndex >= sources.length) {
-                return reject(new Error(`No results found for "${query}" on TikTok or Dailymotion.`));
+        exec(command, (error, stdout, stderr) => {
+            if (error) {
+                console.error(`❌ Facebook search failed: ${stderr}`);
+                reject(new Error(`No results found for "${query}" on Facebook.`));
+            } else {
+                console.log(`✅ Download complete from Facebook: ${outputPath}`);
+                resolve(outputPath);
             }
-
-            const source = sources[currentIndex];
-            currentIndex++;
-            console.log(`🔍 Searching ${source.name} for: ${query}`);
-
-            const typeArg = type === 'audio' ? 'bestaudio --extract-audio --audio-format mp3' : 'bestvideo+bestaudio --merge-output-format mp4';
-            const command = `yt-dlp -f ${typeArg} --no-check-certificate -o "${outputPath}" "${source.prefix}"`;
-
-            console.log(`🔍 Running: ${command}`);
-
-            exec(command, (error, stdout, stderr) => {
-                if (error) {
-                    console.log(`❌ ${source.name} failed. Trying next...`);
-                    tryNextSource();
-                } else {
-                    console.log(`✅ Download complete from ${source.name}: ${outputPath}`);
-                    resolve(outputPath);
-                }
-            });
-        }
-
-        tryNextSource();
+        });
     });
 }
 
@@ -293,7 +278,7 @@ app.post('/api/chat', async (req, res) => {
     }
 
     // ----------------------------------------------
-    // 📝 .task (AI-POWERED - Uses Google Gemini)
+    // 📝 .task
     // ----------------------------------------------
     if (message.startsWith('.task ')) {
         const parts = message.slice(6).split(' ');
@@ -302,56 +287,44 @@ app.post('/api/chat', async (req, res) => {
         const pages = parts[parts.length - 2] || '3';
         const citations = parts[parts.length - 1] || 'yes';
 
+        if (HF_API_KEY === 'YOUR_HF_API_KEY_HERE') {
+            return res.json({ 
+                reply: `❌ *Hugging Face API Key Missing!*\n\n` +
+                       `🔑 Get your free key: https://huggingface.co/settings/tokens`
+            });
+        }
+
         try {
             const assignment = await generateAIAssignment(topic, field, pages, citations);
             return res.json({ reply: assignment });
         } catch (error) {
             console.error('Task error:', error);
             return res.json({ 
-                reply: `❌ Failed to generate assignment: ${error.message}\n\n` +
-                       `📝 *Usage:* .task <topic> <field> <pages> <citations>\n` +
-                       `💡 *Example:* .task AI in Healthcare Computer Science 5 yes`
+                reply: `❌ Failed to generate assignment: ${error.message}`
             });
         }
     }
 
     // ----------------------------------------------
-    // 📖 .assist (COMPLETE COMMAND LIST)
+    // 📖 .assist (SHORTENED - ALL COMMANDS, NO EXAMPLES)
     // ----------------------------------------------
     if (message === '.assist') {
-        const helpText = `📖 *with-us AI - Complete Command List*\n\n` +
+        const helpText = `📖 *with-us AI - Command List*\n\n` +
             `┌─────────────────────────────────────────────┐\n` +
             `│ 🎵 MEDIA DOWNLOAD                         │\n` +
             `├─────────────────────────────────────────────┤\n` +
-            `│ .search <title>                           │\n` +
-            `│   └─ Search TikTok & Dailymotion          │\n` +
-            `│   └─ Downloads directly to your device    │\n` +
-            `│   └─ Example: .search Despacito           │\n` +
-            `│                                           │\n` +
-            `│ .dl <URL>                                │\n` +
-            `│   └─ Download from ANY platform          │\n` +
-            `│   └─ Example: .dl https://youtu.be/...   │\n` +
-            `│                                           │\n` +
-            `│ .play <song>                             │\n` +
-            `│   └─ Download audio (MP3)                │\n` +
-            `│   └─ Example: .play Despacito            │\n` +
-            `│                                           │\n` +
-            `│ .vid <video>                             │\n` +
-            `│   └─ Download video (MP4)                │\n` +
-            `│   └─ Example: .vid funny cats            │\n` +
+            `│ .search <title>  - Facebook video search  │\n` +
+            `│ .dl <URL>        - Download any platform  │\n` +
+            `│ .play <song>     - Download audio (MP3)   │\n` +
+            `│ .vid <video>     - Download video (MP4)   │\n` +
             `├─────────────────────────────────────────────┤\n` +
             `│ 📝 AI ASSIGNMENT WRITER                   │\n` +
             `├─────────────────────────────────────────────┤\n` +
-            `│ .task <topic> <field> <pages> <citations>│\n` +
-            `│   └─ Write assignment using AI (Gemini)  │\n` +
-            `│   └─ Example: .task AI in Healthcare     │\n` +
-            `│      Computer Science 5 yes              │\n` +
+            `│ .task <topic> <field> <pages> <citations> │\n` +
             `├─────────────────────────────────────────────┤\n` +
             `│ 💬 GROUP CHAT                            │\n` +
             `├─────────────────────────────────────────────┤\n` +
-            `│ .me <message>                            │\n` +
-            `│   └─ Send message to all users           │\n` +
-            `│   └─ Example: .me Hello everyone!        │\n` +
+            `│ .me <message>    - Send to all users      │\n` +
             `├─────────────────────────────────────────────┤\n` +
             `│ 👤 USEFUL COMMANDS                        │\n` +
             `├─────────────────────────────────────────────┤\n` +
@@ -360,11 +333,7 @@ app.post('/api/chat', async (req, res) => {
             `│ .users      - All users (Admin only)      │\n` +
             `│ .upgrade    - Upgrade user (Admin only)   │\n` +
             `│ .broadcast  - Announcement (Admin only)   │\n` +
-            `└─────────────────────────────────────────────┘\n\n` +
-            `💡 *Type "hello" for a warm welcome!*\n` +
-            `💡 *Try:* .search Despacito\n` +
-            `💡 *Try:* .task Climate Change Environmental Science 4 yes\n` +
-            `💡 *Try:* .me Hello everyone!`;
+            `└─────────────────────────────────────────────┘`;
         return res.json({ reply: helpText });
     }
 
@@ -378,12 +347,12 @@ app.post('/api/chat', async (req, res) => {
                 `💼 *Role:* Full Stack System and Online Applications Developer\n` +
                 `🎓 *Education:* ICT Student, Mzuzu University\n` +
                 `🌍 *Location:* Malawi\n\n` +
-                `🤖 *Bot:* with-us AI - Universal Media Downloader & AI Assignment Writer.`
+                `🤖 *Bot:* with-us AI`
         });
     }
 
     // ----------------------------------------------
-    // 🎵 .search (TikTok + Dailymotion - Downloads Directly)
+    // 🎵 .search (Facebook)
     // ----------------------------------------------
     if (message.startsWith('.search ')) {
         const query = message.slice(8);
@@ -396,7 +365,7 @@ app.post('/api/chat', async (req, res) => {
 
         try {
             const filePath = path.join(TEMP_DIR, `${Date.now()}.mp4`);
-            await searchAndDownload(query, filePath, 'video');
+            await searchFacebook(query, filePath, 'video');
 
             const stats = fs.statSync(filePath);
             const fileSizeMB = stats.size / (1024 * 1024);
@@ -422,11 +391,7 @@ app.post('/api/chat', async (req, res) => {
         } catch (error) {
             console.error('Search error:', error);
             return res.json({ 
-                reply: `❌ ${error.message}\n\n` +
-                       `💡 *Tips:*\n` +
-                       `• Try a different search term\n` +
-                       `• Use .dl with a direct link\n` +
-                       `• Use .play for audio only`
+                reply: `❌ ${error.message}\n\n💡 Try a different search term or use .dl with a direct link.`
             });
         }
     }
@@ -445,7 +410,7 @@ app.post('/api/chat', async (req, res) => {
 
         try {
             const filePath = path.join(TEMP_DIR, `${Date.now()}.mp3`);
-            await searchAndDownload(query, filePath, 'audio');
+            await searchFacebook(query, filePath, 'audio');
 
             const fileBuffer = fs.readFileSync(filePath);
             const base64File = fileBuffer.toString('base64');
@@ -480,7 +445,7 @@ app.post('/api/chat', async (req, res) => {
 
         try {
             const filePath = path.join(TEMP_DIR, `${Date.now()}.mp4`);
-            await searchAndDownload(query, filePath, 'video');
+            await searchFacebook(query, filePath, 'video');
 
             const stats = fs.statSync(filePath);
             const fileSizeMB = stats.size / (1024 * 1024);
@@ -559,8 +524,7 @@ app.post('/api/chat', async (req, res) => {
     // UNKNOWN COMMAND
     // ----------------------------------------------
     return res.json({ 
-        reply: `❌ Unknown command. Type .assist to see all commands.\n\n` +
-               `💡 *Try:* hello, .search, .task, .me, .dl`
+        reply: `❌ Unknown command. Type .assist to see all commands.`
     });
 });
 
@@ -585,5 +549,5 @@ app.get('/api/groupmessages', (req, res) => {
 app.listen(PORT, () => {
     console.log(`✅ with-us AI Chat running on port ${PORT}`);
     console.log(`🌐 Open: https://withus.onrender.com`);
-    console.log(`🤖 Gemini AI: ✅ Set`);
-});
+    console.log(`🤖 Hugging Face AI: ${HF_API_KEY === 'YOUR_HF_API_KEY_HERE' ? '❌ MISSING!' : '✅ Set'}`);
+});a
