@@ -270,6 +270,20 @@
         }
         .message .download-btn:hover { transform: scale(1.03); box-shadow: 0 0 30px rgba(108,99,255,0.2); }
 
+        .message .player-wrapper {
+            margin-top: 10px;
+            border-radius: 12px;
+            overflow: hidden;
+            max-width: 100%;
+        }
+        .message .player-wrapper audio,
+        .message .player-wrapper video {
+            width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+            background: #1a1a2e;
+        }
+
         .typing-indicator {
             align-self: flex-start;
             background: rgba(255,255,255,0.03);
@@ -346,6 +360,8 @@
             .chat-header { padding: 14px 16px; }
             .chat-messages { padding: 16px 14px; }
             .message { max-width: 92%; }
+            .message .player-wrapper audio,
+            .message .player-wrapper video { max-height: 200px; }
         }
     </style>
 </head>
@@ -357,9 +373,9 @@
     <div id="loginScreen">
         <div class="login-card">
             <div class="logo">WITH-US</div>
-            <div class="subtitle"><span>✦</span>with us AI nexus <span>✦</span></div>
-            <input type="text" id="loginNameInput" placeholder="Enter your callsign..." autocomplete="off" maxlength="30" />
-            <button class="btn-join" id="joinBtn">⟡ Get started⟡</button>
+            <div class="subtitle"><span>✦</span> Porwerfull with us AI <span>✦</span></div>
+            <input type="text" id="loginNameInput" placeholder="Enter your callsign.(profile name.." autocomplete="off" maxlength="30" />
+            <button class="btn-join" id="joinBtn">⟡ Get in ⟡</button>
             <div class="footer-note">Your identity stays within this device.</div>
         </div>
     </div>
@@ -384,7 +400,7 @@
             </div>
         </div>
 
-        <div class="typing-indicator" id="typingIndicator">🤖 with us AI is generating response...</div>
+        <div class="typing-indicator" id="typingIndicator">🤖 Bot is generating response...</div>
 
         <div class="chat-input">
             <input type="text" id="messageInput" placeholder=".search, .task, .me, or just say hello..." />
@@ -505,13 +521,41 @@
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
 
+        function addMediaMessage(text, filename, fileData, mimeType) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message bot';
+            
+            let formattedText = text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/\n/g, '<br>');
+
+            let html = `<div class="sender">⚡ with-us AI</div>`;
+            html += formattedText;
+            
+            // Add player
+            const dataUrl = `data:${mimeType};base64,${fileData}`;
+            if (mimeType.startsWith('audio/')) {
+                html += `<div class="player-wrapper"><audio controls preload="metadata"><source src="${dataUrl}" type="${mimeType}"></audio></div>`;
+            } else if (mimeType.startsWith('video/')) {
+                html += `<div class="player-wrapper"><video controls preload="metadata"><source src="${dataUrl}" type="${mimeType}"></video></div>`;
+            }
+            
+            // Add download button
+            html += `<br><a href="${dataUrl}" download="${filename}" class="download-btn">⬇ Download File</a>`;
+            
+            const timeSpan = document.createElement('span');
+            timeSpan.className = 'time';
+            timeSpan.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            html += timeSpan.outerHTML;
+            
+            messageDiv.innerHTML = html;
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
         function triggerDownload(filename, base64Data, mimeType) {
-            const link = document.createElement('a');
-            link.href = `data:${mimeType};base64,${base64Data}`;
-            link.download = filename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            // This is now handled by addMediaMessage which shows the player
         }
 
         // ----------------------------------------------
@@ -589,15 +633,10 @@
                 typingIndicator.style.display = 'none';
 
                 if (data.action === 'download') {
-                    addMessage(data.reply, 'bot');
-                    triggerDownload(data.filename, data.file, data.mimeType);
+                    // Show the media with player
+                    addMediaMessage(data.reply, data.filename, data.file, data.mimeType);
                 } else if (data.reply) {
-                    // Check if it's a group message being displayed
-                    if (text.startsWith('.me ')) {
-                        // The group message will be fetched by the interval
-                    } else {
-                        addMessage(data.reply, 'bot');
-                    }
+                    addMessage(data.reply, 'bot');
                 }
 
                 if (data.announcement) {
