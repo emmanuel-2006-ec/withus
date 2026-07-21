@@ -7,11 +7,14 @@ const https = require('https');
 // ----------------------------------------------
 // 📌 CONFIGURATION
 // ----------------------------------------------
-const ADMIN_NAME = 'Emmanuel';
+const ADMIN_NAME = 'Emmanuel@1';
 const ADMIN_ID = null;
 
-// 🍪 SPOTIFY COOKIE
-const SPOTIFY_COOKIE = 'YOUR_SP_DC_COOKIE_HERE';
+// 🔑 GOOGLE GEMINI API KEY (Inserted)
+const GEMINI_API_KEY = 'AQ.Ab8RN6Ltd3nd8iDtj-iVdLrENtMsm6wUwqmBneZ_WRKkkxiXbA';
+
+// 🍪 SPOTIFY COOKIE (Leave empty if not using)
+const SPOTIFY_COOKIE = '';
 
 // ----------------------------------------------
 // 📂 SETUP
@@ -33,155 +36,73 @@ function saveDB(data) {
 }
 
 // ----------------------------------------------
-// 🛠️ REAL ASSIGNMENT WRITER (AI-Powered)
+// 🛠️ REAL AI ASSIGNMENT WRITER (Google Gemini)
 // ----------------------------------------------
-function generateAssignment(topic, field, pages = 3, citations = 'yes') {
-    return new Promise((resolve, reject) => {
-        // Simulate researching from multiple sources
-        const sources = {
-            'AI in Healthcare': {
-                content: `Artificial Intelligence is revolutionizing healthcare by enhancing diagnostic accuracy, personalizing treatment plans, and streamlining administrative processes. Machine learning algorithms analyze medical images with precision surpassing human experts in some cases. Natural language processing extracts insights from unstructured clinical notes, improving patient care coordination.`,
-                citations: [
-                    { author: 'Smith, J.', year: 2023, title: 'AI in Modern Medicine', publisher: 'Oxford University Press', pages: '45-67' },
-                    { author: 'Johnson, K.', year: 2022, title: 'Machine Learning for Healthcare', publisher: 'Cambridge University Press', pages: '112-130' },
-                    { author: 'Williams, R.', year: 2024, title: 'Deep Learning Applications', publisher: 'Academic Press', pages: '78-92' },
-                    { author: 'Brown, T.', year: 2021, title: 'Healthcare Innovation', publisher: 'Pearson Education', pages: '200-215' },
-                    { author: 'Davis, M.', year: 2023, title: 'Ethical AI in Medicine', publisher: 'Springer Nature', pages: '34-56' }
-                ]
-            },
-            'Machine Learning': {
-                content: `Machine learning has emerged as a transformative technology across industries, enabling systems to learn from data and improve performance without explicit programming. Supervised learning algorithms predict outcomes based on labeled training data, while unsupervised learning discovers hidden patterns in unlabeled datasets. Reinforcement learning optimizes decision-making through trial and error, achieving superhuman performance in complex games.`,
-                citations: [
-                    { author: 'Goodfellow, I.', year: 2020, title: 'Deep Learning', publisher: 'MIT Press', pages: '150-180' },
-                    { author: 'Russell, S.', year: 2022, title: 'Artificial Intelligence: A Modern Approach', publisher: 'Pearson', pages: '300-320' },
-                    { author: 'Bishop, C.', year: 2021, title: 'Pattern Recognition', publisher: 'Springer', pages: '45-78' }
-                ]
-            },
-            'Climate Change': {
-                content: `Climate change represents one of the most significant challenges facing humanity, driven by anthropogenic greenhouse gas emissions. Rising global temperatures have accelerated polar ice melt, sea-level rise, and extreme weather events. International agreements like the Paris Accord aim to limit warming to 1.5°C above pre-industrial levels through coordinated policy action.`,
-                citations: [
-                    { author: 'Hansen, J.', year: 2021, title: 'Climate Crisis', publisher: 'Columbia University Press', pages: '89-110' },
-                    { author: 'Mann, M.', year: 2022, title: 'The New Climate War', publisher: 'PublicAffairs', pages: '45-67' },
-                    { author: 'Thunberg, G.', year: 2023, title: 'The Climate Book', publisher: 'Penguin Random House', pages: '200-230' }
-                ]
-            },
-            'Cybersecurity': {
-                content: `Cybersecurity has become a critical concern in the digital age, with organizations facing sophisticated cyber threats including ransomware, phishing, and advanced persistent threats. Zero-trust architectures assume that threats exist both inside and outside networks, implementing continuous verification of user identity and device health.`,
-                citations: [
-                    { author: 'Schneier, B.', year: 2021, title: 'Click Here to Kill Everybody', publisher: 'W. W. Norton & Company', pages: '78-95' },
-                    { author: 'Mitnick, K.', year: 2022, title: 'The Art of Invisibility', publisher: 'Little, Brown and Company', pages: '150-170' },
-                    { author: 'Goodman, M.', year: 2020, title: 'Future Crimes', publisher: 'Anchor Books', pages: '300-325' }
-                ]
-            },
-            'Quantum Computing': {
-                content: `Quantum computing harnesses the principles of quantum mechanics to perform computations that are infeasible for classical computers. Qubits exploit superposition and entanglement to process information exponentially faster than traditional bits. Applications include cryptography, drug discovery, materials science, and optimization problems.`,
-                citations: [
-                    { author: 'Nielsen, M.', year: 2020, title: 'Quantum Computation', publisher: 'Cambridge University Press', pages: '45-78' },
-                    { author: 'Aaronson, S.', year: 2021, title: 'Quantum Computing Since Democritus', publisher: 'Cambridge University Press', pages: '120-140' },
-                    { author: 'Kaku, M.', year: 2022, title: 'Quantum Supremacy', publisher: 'Doubleday', pages: '200-230' }
-                ]
-            }
-        };
+async function generateAIAssignment(topic, field, pages = 3, citations = 'yes') {
+    const prompt = `Write a detailed academic assignment on the topic: "${topic}" in the field of "${field}".
 
-        // Try to find matching topic, otherwise use generic
-        let matchedKey = Object.keys(sources).find(key => 
-            topic.toLowerCase().includes(key.toLowerCase()) || 
-            key.toLowerCase().includes(topic.toLowerCase())
-        );
+Requirements:
+- Length: ${pages} pages (approximately ${parseInt(pages) * 350} words)
+- Format: Academic essay with proper structure
+- Citations: ${citations === 'yes' ? 'Include APA in-text citations and a reference list at the end' : 'No citations needed'}
+- Content should be original, well-researched, and comprehensive
+- Include introduction, body paragraphs with topic sentences, and conclusion
+- Answer the question thoroughly with real examples and explanations
 
-        if (!matchedKey) {
-            // Generic content for unknown topics
-            const genericContent = `This assignment explores the multifaceted topic of ${topic} within the field of ${field || 'general studies'}. The analysis draws upon contemporary research and theoretical frameworks to provide a comprehensive understanding of key concepts, applications, and implications.`;
-            const genericCitations = [
-                { author: 'Smith, A.', year: 2023, title: `Understanding ${topic}`, publisher: 'Academic Press', pages: '1-25' },
-                { author: 'Johnson, B.', year: 2022, title: `Advances in ${field || 'General Studies'}`, publisher: 'Cambridge University Press', pages: '30-55' },
-                { author: 'Williams, C.', year: 2024, title: `Practical Applications of ${topic}`, publisher: 'Oxford University Press', pages: '10-40' }
-            ];
-            matchedKey = 'Generic';
-            sources['Generic'] = { content: genericContent, citations: genericCitations };
-        }
+Format the response with:
+1. Introduction
+2. Main body (with clear sections and subheadings)
+3. Conclusion
+4. References (if citations are requested)
 
-        const data = sources[matchedKey];
-        const pageCount = parseInt(pages) || 3;
-        const includeCitations = citations.toLowerCase() === 'yes';
+The assignment should be written in a clear, academic style that demonstrates deep understanding of the subject.`;
 
-        let assignment = `📚 *ASSIGNMENT: ${topic.toUpperCase()}*\n\n`;
-        assignment += `📖 *Field:* ${field || 'General Studies'}\n`;
-        assignment += `📄 *Pages:* ${pageCount}\n`;
-        assignment += `📝 *Citations:* ${includeCitations ? 'Included (APA Format)' : 'Not Included'}\n`;
-        assignment += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
-
-        // Introduction
-        assignment += `*1. INTRODUCTION*\n\n`;
-        let intro = data.content.split('. ').slice(0, 3).join('. ') + '.';
-        if (includeCitations) {
-            const cit = data.citations[0];
-            intro += ` (${cit.author}, ${cit.year}, p. ${cit.pages.split('-')[0]})`;
-        }
-        assignment += intro + '\n\n';
-
-        // Body paragraphs based on page count
-        const sentences = data.content.split('. ');
-        let currentIndex = 3;
-
-        for (let i = 1; i <= Math.min(pageCount, 5); i++) {
-            const sectionNum = i + 1;
-            assignment += `*${sectionNum}. SECTION ${sectionNum - 1}: ${['Context and Background', 'Core Concepts', 'Practical Applications', 'Case Studies', 'Critical Analysis'][i-1] || 'Further Analysis'}*\n\n`;
-            
-            // Generate content with citations
-            let content = '';
-            for (let j = 0; j < 4; j++) {
-                if (currentIndex < sentences.length) {
-                    let sentence = sentences[currentIndex].trim() + '.';
-                    if (includeCitations && j % 2 === 0) {
-                        const cit = data.citations[(i + j) % data.citations.length];
-                        sentence += ` This concept is supported by research demonstrating its significance (${cit.author}, ${cit.year}, p. ${cit.pages})`;
-                    }
-                    content += sentence + ' ';
-                    currentIndex++;
-                } else {
-                    // Generate additional content if we run out
-                    content += `The theoretical foundations of ${topic} continue to evolve, with new research emerging regularly. `;
-                    if (includeCitations) {
-                        const cit = data.citations[(i + j) % data.citations.length];
-                        content += `According to ${cit.author} (${cit.year}), understanding these dynamics is essential for practical applications (p. ${cit.pages}). `;
-                    }
+    try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [{ text: prompt }]
+                }],
+                generationConfig: {
+                    temperature: 0.7,
+                    maxOutputTokens: 2048,
                 }
-            }
-            assignment += content + '\n\n';
+            })
+        });
+
+        const data = await response.json();
+        
+        if (data.error) {
+            console.error('Gemini API Error:', data.error);
+            return `❌ API Error: ${data.error.message}\n\nPlease check your Gemini API key and try again.`;
         }
 
-        // Conclusion
-        assignment += `*${Math.min(pageCount, 5) + 2}. CONCLUSION*\n\n`;
-        const conclusion = `In conclusion, this assignment has provided a comprehensive analysis of ${topic}, examining its theoretical foundations, practical applications, and implications for the field of ${field || 'general studies'}. `;
-        const finalSent = `The evidence suggests that ${topic} will continue to be a significant area of research and practice.`;
-        assignment += conclusion + (includeCitations ? ` As noted by ${data.citations[0].author} (${data.citations[0].year}), "${topic} represents a paradigm shift in our understanding" (p. ${data.citations[0].pages.split('-')[0]}). ` : ' ') + finalSent + '\n\n';
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No content generated.';
+        
+        // Format the response for the chat
+        let formatted = `📚 *ASSIGNMENT: ${topic.toUpperCase()}*\n\n`;
+        formatted += `📖 *Field:* ${field || 'General Studies'}\n`;
+        formatted += `📄 *Pages:* ${pages}\n`;
+        formatted += `📝 *Citations:* ${citations === 'yes' ? 'Included (APA Format)' : 'Not Included'}\n`;
+        formatted += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+        formatted += text;
+        formatted += `\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+        formatted += `✅ Assignment generated using with us AI w AI\n`;
+        formatted += `📌 *Note:* This is AI-generated content. Please review and edit as needed.`;
 
-        // References (APA Format)
-        if (includeCitations) {
-            assignment += `*REFERENCES*\n\n`;
-            data.citations.forEach((ref, idx) => {
-                assignment += `${idx + 1}. ${ref.author} (${ref.year}). *${ref.title}*. ${ref.publisher}. (pp. ${ref.pages})\n`;
-            });
-            // Add the actual sources where information was extracted
-            assignment += `\n*Sources Used for Research:*\n`;
-            data.citations.forEach((ref, idx) => {
-                assignment += `• ${ref.author} (${ref.year}). ${ref.title}. ${ref.publisher}\n`;
-            });
-        }
-
-        assignment += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
-        assignment += `✅ Assignment generated successfully!\n`;
-        assignment += `📚 *${pageCount} pages of content with ${includeCitations ? 'APA citations' : 'no citations'}*`;
-
-        resolve(assignment);
-    });
+        return formatted;
+    } catch (error) {
+        console.error('AI Assignment Error:', error);
+        return `❌ Failed to generate assignment: ${error.message}\n\nPlease try again later.`;
+    }
 }
 
 // ----------------------------------------------
-// 🛠️ SEARCH AND DOWNLOAD FUNCTIONS
+// 🛠️ SEARCH FUNCTION (TikTok + Dailymotion)
 // ----------------------------------------------
-function searchMedia(query, outputPath, type = 'audio') {
+function searchAndDownload(query, outputPath, type = 'video') {
     return new Promise((resolve, reject) => {
         const sources = [
             { name: 'TikTok', prefix: `tiksearch:${query}` },
@@ -192,19 +113,17 @@ function searchMedia(query, outputPath, type = 'audio') {
 
         function tryNextSource() {
             if (currentIndex >= sources.length) {
-                return reject(new Error(`No results found for "${query}".`));
+                return reject(new Error(`No results found for "${query}" on TikTok or Dailymotion.`));
             }
 
             const source = sources[currentIndex];
             currentIndex++;
             console.log(`🔍 Searching ${source.name} for: ${query}`);
 
-            let command;
-            if (type === 'audio') {
-                command = `yt-dlp -f bestaudio --extract-audio --audio-format mp3 --no-check-certificate -o "${outputPath}" "${source.prefix}"`;
-            } else {
-                command = `yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 --no-check-certificate -o "${outputPath}" "${source.prefix}"`;
-            }
+            const typeArg = type === 'audio' ? 'bestaudio --extract-audio --audio-format mp3' : 'bestvideo+bestaudio --merge-output-format mp4';
+            const command = `yt-dlp -f ${typeArg} --no-check-certificate -o "${outputPath}" "${source.prefix}"`;
+
+            console.log(`🔍 Running: ${command}`);
 
             exec(command, (error, stdout, stderr) => {
                 if (error) {
@@ -221,18 +140,14 @@ function searchMedia(query, outputPath, type = 'audio') {
     });
 }
 
-function downloadMedia(url, outputPath, type = 'audio', progressCallback = null) {
+function downloadDirect(url, outputPath, type = 'video') {
     return new Promise((resolve, reject) => {
-        let command;
-        if (type === 'audio') {
-            command = `yt-dlp -f bestaudio --extract-audio --audio-format mp3 --no-check-certificate -o "${outputPath}" "${url}"`;
-        } else {
-            command = `yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 --no-check-certificate -o "${outputPath}" "${url}"`;
-        }
+        const typeArg = type === 'audio' ? 'bestaudio --extract-audio --audio-format mp3' : 'bestvideo+bestaudio --merge-output-format mp4';
+        const command = `yt-dlp -f ${typeArg} --no-check-certificate -o "${outputPath}" "${url}"`;
 
         console.log(`🔍 Running: ${command}`);
 
-        const child = exec(command, (error, stdout, stderr) => {
+        exec(command, (error, stdout, stderr) => {
             if (error) {
                 console.error(`❌ yt-dlp error: ${stderr}`);
                 reject(new Error(`Download failed: ${stderr || error.message}`));
@@ -241,43 +156,6 @@ function downloadMedia(url, outputPath, type = 'audio', progressCallback = null)
                 resolve(outputPath);
             }
         });
-    });
-}
-
-// ----------------------------------------------
-// 🎵 SPOTIFY SEARCH
-// ----------------------------------------------
-function searchSpotify(query) {
-    return new Promise((resolve, reject) => {
-        const searchUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=5`;
-        const tokenUrl = 'https://open.spotify.com/get_access_token?reason=transport&productType=web_player';
-        const options = { headers: { 'Cookie': `sp_dc=${SPOTIFY_COOKIE}`, 'User-Agent': 'Mozilla/5.0' } };
-
-        https.get(tokenUrl, options, (tokenRes) => {
-            let tokenData = '';
-            tokenRes.on('data', (chunk) => { tokenData += chunk; });
-            tokenRes.on('end', () => {
-                try {
-                    const tokenJson = JSON.parse(tokenData);
-                    const accessToken = tokenJson.accessToken;
-                    if (!accessToken) {
-                        reject(new Error('Failed to get Spotify access token.'));
-                        return;
-                    }
-                    const searchOptions = { headers: { 'Authorization': `Bearer ${accessToken}` } };
-                    https.get(searchUrl, searchOptions, (searchRes) => {
-                        let searchData = '';
-                        searchRes.on('data', (chunk) => { searchData += chunk; });
-                        searchRes.on('end', () => {
-                            try {
-                                const results = JSON.parse(searchData);
-                                resolve(results.tracks?.items || []);
-                            } catch (err) { reject(err); }
-                        });
-                    }).on('error', reject);
-                } catch (err) { reject(err); }
-            });
-        }).on('error', reject);
     });
 }
 
@@ -415,7 +293,7 @@ app.post('/api/chat', async (req, res) => {
     }
 
     // ----------------------------------------------
-    // 📝 .task (REAL ASSIGNMENT WRITER)
+    // 📝 .task (AI-POWERED - Uses Google Gemini)
     // ----------------------------------------------
     if (message.startsWith('.task ')) {
         const parts = message.slice(6).split(' ');
@@ -423,9 +301,9 @@ app.post('/api/chat', async (req, res) => {
         const field = parts.slice(1, -2).join(' ') || 'General Studies';
         const pages = parts[parts.length - 2] || '3';
         const citations = parts[parts.length - 1] || 'yes';
-        
+
         try {
-            const assignment = await generateAssignment(topic, field, pages, citations);
+            const assignment = await generateAIAssignment(topic, field, pages, citations);
             return res.json({ reply: assignment });
         } catch (error) {
             console.error('Task error:', error);
@@ -442,52 +320,51 @@ app.post('/api/chat', async (req, res) => {
     // ----------------------------------------------
     if (message === '.assist') {
         const helpText = `📖 *with-us AI - Complete Command List*\n\n` +
-            `┌─────────────────────────────────────┐\n` +
-            `│ 🎵 MEDIA DOWNLOAD                   │\n` +
-            `├─────────────────────────────────────┤\n` +
-            `│ .search <title>                    │\n` +
-            `│   └─ Search and download from      │\n` +
-            `│      TikTok & Dailymotion          │\n` +
-            `│   └─ Example: .search Despacito    │\n` +
-            `│                                     │\n` +
-            `│ .dl <URL>                          │\n` +
-            `│   └─ Download from ANY platform    │\n` +
-            `│   └─ Example: .dl https://youtu.be/│\n` +
-            `│                                     │\n` +
-            `│ .play <song>                       │\n` +
-            `│   └─ Download audio (MP3)          │\n` +
-            `│   └─ Example: .play Despacito      │\n` +
-            `│                                     │\n` +
-            `│ .vid <video>                       │\n` +
-            `│   └─ Download video (MP4)          │\n` +
-            `│   └─ Example: .vid funny cats      │\n` +
-            `└─────────────────────────────────────┘\n\n` +
-            `┌─────────────────────────────────────┐\n` +
-            `│ 📝 ASSIGNMENT WRITER                │\n` +
-            `├─────────────────────────────────────┤\n` +
-            `│ .task <topic> <field> <pages> <cit>│\n` +
-            `│   └─ Write assignment with APA     │\n` +
-            `│      citations and references       │\n` +
-            `│   └─ Example: .task AI in Health-   │\n` +
-            `│      care Computer Science 5 yes   │\n` +
-            `└─────────────────────────────────────┘\n\n` +
-            `┌─────────────────────────────────────┐\n` +
-            `│ 💬 GROUP CHAT                      │\n` +
-            `├─────────────────────────────────────┤\n` +
-            `│ .me <message>                      │\n` +
-            `│   └─ Send message to all users     │\n` +
-            `│   └─ Example: .me Hello everyone!  │\n` +
-            `└─────────────────────────────────────┘\n\n` +
-            `┌─────────────────────────────────────┐\n` +
-            `│ 👤 USEFUL COMMANDS                  │\n` +
-            `├─────────────────────────────────────┤\n` +
-            `│ .developer  - About the developer   │\n` +
-            `│ .id         - Your profile & ID     │\n` +
-            `│ .users      - All users (Admin)     │\n` +
-            `│ .upgrade    - Upgrade user (Admin)  │\n` +
-            `│ .broadcast  - Announcement (Admin)  │\n` +
-            `└─────────────────────────────────────┘\n\n` +
-            `💡 *Tip:* Type "hello" for a warm welcome!`;
+            `┌─────────────────────────────────────────────┐\n` +
+            `│ 🎵 MEDIA DOWNLOAD                         │\n` +
+            `├─────────────────────────────────────────────┤\n` +
+            `│ .search <title>                           │\n` +
+            `│   └─ Search TikTok & Dailymotion          │\n` +
+            `│   └─ Downloads directly to your device    │\n` +
+            `│   └─ Example: .search Despacito           │\n` +
+            `│                                           │\n` +
+            `│ .dl <URL>                                │\n` +
+            `│   └─ Download from ANY platform          │\n` +
+            `│   └─ Example: .dl https://youtu.be/...   │\n` +
+            `│                                           │\n` +
+            `│ .play <song>                             │\n` +
+            `│   └─ Download audio (MP3)                │\n` +
+            `│   └─ Example: .play Despacito            │\n` +
+            `│                                           │\n` +
+            `│ .vid <video>                             │\n` +
+            `│   └─ Download video (MP4)                │\n` +
+            `│   └─ Example: .vid funny cats            │\n` +
+            `├─────────────────────────────────────────────┤\n` +
+            `│ 📝 AI ASSIGNMENT WRITER                   │\n` +
+            `├─────────────────────────────────────────────┤\n` +
+            `│ .task <topic> <field> <pages> <citations>│\n` +
+            `│   └─ Write assignment using AI (Gemini)  │\n` +
+            `│   └─ Example: .task AI in Healthcare     │\n` +
+            `│      Computer Science 5 yes              │\n` +
+            `├─────────────────────────────────────────────┤\n` +
+            `│ 💬 GROUP CHAT                            │\n` +
+            `├─────────────────────────────────────────────┤\n` +
+            `│ .me <message>                            │\n` +
+            `│   └─ Send message to all users           │\n` +
+            `│   └─ Example: .me Hello everyone!        │\n` +
+            `├─────────────────────────────────────────────┤\n` +
+            `│ 👤 USEFUL COMMANDS                        │\n` +
+            `├─────────────────────────────────────────────┤\n` +
+            `│ .developer  - About the developer         │\n` +
+            `│ .id         - Your profile & ID           │\n` +
+            `│ .users      - All users (Admin only)      │\n` +
+            `│ .upgrade    - Upgrade user (Admin only)   │\n` +
+            `│ .broadcast  - Announcement (Admin only)   │\n` +
+            `└─────────────────────────────────────────────┘\n\n` +
+            `💡 *Type "hello" for a warm welcome!*\n` +
+            `💡 *Try:* .search Despacito\n` +
+            `💡 *Try:* .task Climate Change Environmental Science 4 yes\n` +
+            `💡 *Try:* .me Hello everyone!`;
         return res.json({ reply: helpText });
     }
 
@@ -501,12 +378,12 @@ app.post('/api/chat', async (req, res) => {
                 `💼 *Role:* Full Stack System and Online Applications Developer\n` +
                 `🎓 *Education:* ICT Student, Mzuzu University\n` +
                 `🌍 *Location:* Malawi\n\n` +
-                `🤖 *Bot:* with-us AI - Universal Media Downloader & Assignment Writer.`
+                `🤖 *Bot:* with-us AI - Universal Media Downloader & AI Assignment Writer.`
         });
     }
 
     // ----------------------------------------------
-    // 🎵 .search (TikTok + Dailymotion - NO YOUTUBE)
+    // 🎵 .search (TikTok + Dailymotion - Downloads Directly)
     // ----------------------------------------------
     if (message.startsWith('.search ')) {
         const query = message.slice(8);
@@ -518,11 +395,8 @@ app.post('/api/chat', async (req, res) => {
         }
 
         try {
-            // Try downloading from TikTok first, then Dailymotion
             const filePath = path.join(TEMP_DIR, `${Date.now()}.mp4`);
-            
-            // Use searchMedia which tries TikTok then Dailymotion
-            await searchMedia(query, filePath, 'video');
+            await searchAndDownload(query, filePath, 'video');
 
             const stats = fs.statSync(filePath);
             const fileSizeMB = stats.size / (1024 * 1024);
@@ -543,17 +417,16 @@ app.post('/api/chat', async (req, res) => {
                 filename: `${query}.mp4`,
                 file: base64File,
                 mimeType: 'video/mp4',
-                reply: `✅ *${query}* - Downloaded!\n\n📥 *File saved to your device.*\n🎬 *Click play below to watch!*`
+                reply: `✅ *${query}* - Downloaded!\n\n🎬 *Click play below to watch!*`
             });
         } catch (error) {
             console.error('Search error:', error);
             return res.json({ 
-                reply: `❌ No results found for "${query}".\n\n` +
-                       `💡 Tips:\n` +
+                reply: `❌ ${error.message}\n\n` +
+                       `💡 *Tips:*\n` +
                        `• Try a different search term\n` +
                        `• Use .dl with a direct link\n` +
-                       `• Try .play for audio only\n` +
-                       `• Try .vid for video search`
+                       `• Use .play for audio only`
             });
         }
     }
@@ -572,7 +445,7 @@ app.post('/api/chat', async (req, res) => {
 
         try {
             const filePath = path.join(TEMP_DIR, `${Date.now()}.mp3`);
-            await searchMedia(query, filePath, 'audio');
+            await searchAndDownload(query, filePath, 'audio');
 
             const fileBuffer = fs.readFileSync(filePath);
             const base64File = fileBuffer.toString('base64');
@@ -607,7 +480,7 @@ app.post('/api/chat', async (req, res) => {
 
         try {
             const filePath = path.join(TEMP_DIR, `${Date.now()}.mp4`);
-            await searchMedia(query, filePath, 'video');
+            await searchAndDownload(query, filePath, 'video');
 
             const stats = fs.statSync(filePath);
             const fileSizeMB = stats.size / (1024 * 1024);
@@ -653,7 +526,7 @@ app.post('/api/chat', async (req, res) => {
 
         try {
             const filePath = path.join(TEMP_DIR, `${Date.now()}.mp4`);
-            await downloadMedia(url, filePath, 'video');
+            await downloadDirect(url, filePath, 'video');
 
             const stats = fs.statSync(filePath);
             const fileSizeMB = stats.size / (1024 * 1024);
@@ -712,5 +585,5 @@ app.get('/api/groupmessages', (req, res) => {
 app.listen(PORT, () => {
     console.log(`✅ with-us AI Chat running on port ${PORT}`);
     console.log(`🌐 Open: https://withus.onrender.com`);
-    console.log(`🍪 Spotify cookie: ${SPOTIFY_COOKIE === 'YOUR_SP_DC_COOKIE_HERE' ? '❌ MISSING!' : 'Set ✅'}`);
+    console.log(`🤖 Gemini AI: ✅ Set`);
 });
