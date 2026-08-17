@@ -1,4 +1,4 @@
-// server.js - FULL COMPLETE FILE
+// server.js - COMPLETE UPDATED FILE
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
@@ -416,7 +416,9 @@ function handleMyId(ws, userId) {
     }));
 }
 
-// WEATHER HANDLER
+// ============================================
+// 🌤️ IMPROVED WEATHER HANDLER
+// ============================================
 async function handleWeather(args, ws) {
     const city = args || 'Lilongwe';
     
@@ -431,7 +433,6 @@ async function handleWeather(args, ws) {
                     const match = envContent.match(/WEATHER_API_KEY=(.+)/);
                     if (match && match[1]) {
                         apiKey = match[1].trim();
-                        console.log('✅ Weather API key loaded from .env file');
                     }
                 }
             } catch (err) {
@@ -455,16 +456,60 @@ async function handleWeather(args, ws) {
         
         console.log(`🌤️ Fetching weather for ${city}...`);
         const response = await axios.get(
-            `https://api.openweathermap.org/data/2.5/forecast?q=${city}&units=metric&appid=${apiKey}&cnt=5`,
+            `https://api.openweathermap.org/data/2.5/forecast?q=${city}&units=metric&appid=${apiKey}&cnt=40`,
             { timeout: 10000 }
         );
         
-        const forecast = response.data.list.map(day => ({
-            date: new Date(day.dt * 1000).toLocaleDateString(),
-            temp: Math.round(day.main.temp),
-            description: day.weather[0].description,
-            humidity: day.main.humidity
-        }));
+        // Group forecasts by day
+        const dailyForecasts = {};
+        response.data.list.forEach(item => {
+            const date = new Date(item.dt * 1000);
+            const dateKey = date.toDateString();
+            
+            if (!dailyForecasts[dateKey]) {
+                dailyForecasts[dateKey] = {
+                    date: date,
+                    temps: [],
+                    descriptions: [],
+                    humidities: [],
+                    icons: [],
+                    windSpeeds: [],
+                    feelsLike: []
+                };
+            }
+            
+            dailyForecasts[dateKey].temps.push(item.main.temp);
+            dailyForecasts[dateKey].descriptions.push(item.weather[0].description);
+            dailyForecasts[dateKey].humidities.push(item.main.humidity);
+            dailyForecasts[dateKey].icons.push(item.weather[0].icon);
+            dailyForecasts[dateKey].windSpeeds.push(item.wind.speed);
+            dailyForecasts[dateKey].feelsLike.push(item.main.feels_like);
+        });
+        
+        // Process each day's data
+        const forecast = Object.values(dailyForecasts).slice(0, 5).map(day => {
+            // Get most common description
+            const descCount = {};
+            day.descriptions.forEach(d => descCount[d] = (descCount[d] || 0) + 1);
+            const mainDesc = Object.keys(descCount).reduce((a, b) => descCount[a] > descCount[b] ? a : b);
+            
+            // Get most common icon
+            const iconCount = {};
+            day.icons.forEach(i => iconCount[i] = (iconCount[i] || 0) + 1);
+            const mainIcon = Object.keys(iconCount).reduce((a, b) => iconCount[a] > iconCount[b] ? a : b);
+            
+            return {
+                date: day.date,
+                temp_min: Math.round(Math.min(...day.temps)),
+                temp_max: Math.round(Math.max(...day.temps)),
+                temp_avg: Math.round(day.temps.reduce((a, b) => a + b, 0) / day.temps.length),
+                description: mainDesc,
+                icon: mainIcon,
+                humidity: Math.round(day.humidities.reduce((a, b) => a + b, 0) / day.humidities.length),
+                windSpeed: Math.round(day.windSpeeds.reduce((a, b) => a + b, 0) / day.windSpeeds.length * 10) / 10,
+                feelsLike: Math.round(day.feelsLike.reduce((a, b) => a + b, 0) / day.feelsLike.length)
+            };
+        });
         
         ws.send(JSON.stringify({
             type: 'weather',
@@ -474,6 +519,7 @@ async function handleWeather(args, ws) {
                 forecast: forecast
             }
         }));
+        
     } catch (error) {
         console.error('Weather API Error:', error.message);
         const mockForecast = generateMockWeather(city);
@@ -489,21 +535,38 @@ async function handleWeather(args, ws) {
 }
 
 function generateMockWeather(city) {
-    const conditions = ['☀️ Sunny', '⛅ Partly cloudy', '☁️ Cloudy', '🌧️ Light rain', '🌤️ Clear'];
+    const conditions = [
+        { desc: '☀️ Sunny', icon: '01d' },
+        { desc: '⛅ Partly Cloudy', icon: '02d' },
+        { desc: '☁️ Cloudy', icon: '03d' },
+        { desc: '🌧️ Light Rain', icon: '10d' },
+        { desc: '🌤️ Clear', icon: '01d' },
+        { desc: '🌦️ Showers', icon: '09d' },
+        { desc: '⛈️ Thunderstorm', icon: '11d' },
+        { desc: '🌨️ Snow', icon: '13d' }
+    ];
     const today = new Date();
     return Array(5).fill(null).map((_, i) => {
         const date = new Date(today);
         date.setDate(date.getDate() + i);
+        const condition = conditions[Math.floor(Math.random() * conditions.length)];
         return {
-            date: date.toLocaleDateString(),
-            temp: Math.round(20 + Math.random() * 10),
-            description: conditions[Math.floor(Math.random() * conditions.length)],
-            humidity: Math.round(50 + Math.random() * 30)
+            date: date,
+            temp_min: Math.round(18 + Math.random() * 5),
+            temp_max: Math.round(25 + Math.random() * 7),
+            temp_avg: Math.round(22 + Math.random() * 5),
+            description: condition.desc,
+            icon: condition.icon,
+            humidity: Math.round(55 + Math.random() * 30),
+            windSpeed: Math.round((5 + Math.random() * 15) * 10) / 10,
+            feelsLike: Math.round(20 + Math.random() * 8)
         };
     });
 }
 
-// NEWS HANDLER
+// ============================================
+// 📰 IMPROVED NEWS HANDLER
+// ============================================
 async function handleNews(args, ws) {
     const category = args || 'global';
     
@@ -518,7 +581,6 @@ async function handleNews(args, ws) {
                     const match = envContent.match(/NEWS_API_KEY=(.+)/);
                     if (match && match[1]) {
                         apiKey = match[1].trim();
-                        console.log('✅ News API key loaded from .env file');
                     }
                 }
             } catch (err) {
@@ -541,27 +603,40 @@ async function handleNews(args, ws) {
         }
         
         console.log(`📰 Fetching ${category} news...`);
-        let url = `https://gnews.io/api/v4/top-headlines?token=${apiKey}&lang=en&max=5`;
+        let url = `https://gnews.io/api/v4/top-headlines?token=${apiKey}&lang=en&max=10`;
         
         if (category === 'malawi') {
-            url = `https://gnews.io/api/v4/search?q=malawi&token=${apiKey}&lang=en&max=5`;
+            url = `https://gnews.io/api/v4/search?q=malawi&token=${apiKey}&lang=en&max=10`;
         }
         
         const response = await axios.get(url, { timeout: 10000 });
-        const articles = response.data.articles.slice(0, 5).map(article => ({
+        
+        // Process articles with more details
+        const articles = response.data.articles.slice(0, 8).map(article => ({
             title: article.title || 'No title',
             description: article.description || 'No description available',
+            content: article.content || article.description || 'No content available',
             source: article.source?.name || 'Unknown source',
-            url: article.url || '#'
+            url: article.url || '#',
+            image: article.image || null,
+            publishedAt: article.publishedAt ? new Date(article.publishedAt).toLocaleDateString('en-US', { 
+                weekday: 'short', 
+                month: 'short', 
+                day: 'numeric',
+                year: 'numeric'
+            }) : 'Recent',
+            author: article.author || 'Unknown'
         }));
         
         ws.send(JSON.stringify({
             type: 'news',
             data: {
                 category: category,
-                articles: articles
+                articles: articles,
+                total: articles.length
             }
         }));
+        
     } catch (error) {
         console.error('News API Error:', error.message);
         const mockNews = generateMockNews(category);
@@ -578,20 +653,81 @@ async function handleNews(args, ws) {
 
 function generateMockNews(category) {
     const globalNews = [
-        { title: 'Global Economy Shows Signs of Recovery', description: 'World markets respond positively to economic indicators', source: 'World News' },
-        { title: 'New Technology Breakthrough Announced', description: 'Scientists develop new sustainable energy solution', source: 'Tech Today' },
-        { title: 'Climate Summit Concludes with New Agreements', description: 'World leaders commit to reducing carbon emissions', source: 'Environment Daily' }
+        { 
+            title: 'Global Economy Shows Strong Recovery Signs', 
+            description: 'World markets respond positively to economic indicators as GDP growth exceeds expectations in major economies.', 
+            source: 'World News Network',
+            image: null,
+            publishedAt: new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+            author: 'Financial Desk'
+        },
+        { 
+            title: 'Scientists Announce Clean Energy Breakthrough', 
+            description: 'Revolutionary solar technology promises to triple energy efficiency while reducing costs by 40%.', 
+            source: 'Tech Today',
+            image: null,
+            publishedAt: new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+            author: 'Science Team'
+        },
+        { 
+            title: 'Climate Summit Yields Historic Agreement', 
+            description: 'World leaders commit to ambitious carbon reduction targets with developing nations receiving financial support.', 
+            source: 'Environment Daily',
+            image: null,
+            publishedAt: new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+            author: 'Climate Correspondent'
+        },
+        { 
+            title: 'Healthcare Innovation Accelerates Globally', 
+            description: 'AI-powered diagnostic tools and personalized medicine are transforming patient care worldwide.', 
+            source: 'Health News',
+            image: null,
+            publishedAt: new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+            author: 'Medical Editor'
+        }
     ];
     
     const malawiNews = [
-        { title: 'Malawi Agricultural Development Progress', description: 'New farming techniques boost crop yields', source: 'Malawi Times' },
-        { title: 'Lake Malawi Conservation Efforts', description: 'New initiatives to protect aquatic life', source: 'Nature Malawi' },
-        { title: 'Malawi Education Reform Update', description: 'Government announces new education policies', source: 'Education Weekly' }
+        { 
+            title: 'Malawi Agriculture Transformation Underway', 
+            description: 'New farming techniques and irrigation systems boost crop yields by 30% in central region.', 
+            source: 'Malawi Times',
+            image: null,
+            publishedAt: new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+            author: 'Agriculture Reporter'
+        },
+        { 
+            title: 'Lake Malawi Conservation Success Story', 
+            description: 'Community-led initiatives restore fish populations and protect aquatic biodiversity in the lake.', 
+            source: 'Nature Malawi',
+            image: null,
+            publishedAt: new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+            author: 'Environment Journalist'
+        },
+        { 
+            title: 'Digital Education Revolution in Malawi', 
+            description: 'Government partners with tech companies to provide tablets and online learning to rural schools.', 
+            source: 'Education Weekly',
+            image: null,
+            publishedAt: new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+            author: 'Education Desk'
+        },
+        { 
+            title: 'Malawi Infrastructure Development Accelerates', 
+            description: 'New road networks and renewable energy projects create thousands of jobs and improve connectivity.', 
+            source: 'Malawi Development',
+            image: null,
+            publishedAt: new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+            author: 'Development Correspondent'
+        }
     ];
     
     return category === 'malawi' ? malawiNews : globalNews;
 }
 
+// ============================================
+// 📄 READ COMMAND HANDLER
+// ============================================
 function handleRead(ws) {
     ws.send(JSON.stringify({
         type: 'read_prompt',
@@ -691,6 +827,9 @@ function readNextLine(userId) {
     }
 }
 
+// ============================================
+// 💬 PUBLIC MESSAGE HANDLER
+// ============================================
 function handleMe(args, ws, userId) {
     const message = args || 'Hello everyone!';
     const users = getUsers();
@@ -761,6 +900,9 @@ function handleDeveloper(ws) {
     }));
 }
 
+// ============================================
+// 🔄 TUNE COMMAND HANDLER
+// ============================================
 async function handleTune(args, ws) {
     if (!args) {
         ws.send(JSON.stringify({
@@ -805,7 +947,7 @@ function humanizeText(text) {
 }
 
 // ============================================
-// 🎬 WORKING .SHOT COMMAND - AUTO DOWNLOAD
+// 🎬 IMPROVED .SHOT COMMAND - Multiple Download Methods
 // ============================================
 async function handleShot(args, ws, userId) {
     // Validate URL
@@ -828,110 +970,227 @@ async function handleShot(args, ws, userId) {
     
     ws.send(JSON.stringify({
         type: 'shot_progress',
-        data: '⏳ Downloading Facebook video... Please wait...'
+        data: '⏳ Fetching Facebook video... Please wait...'
     }));
     
     try {
         console.log(`📹 Attempting to download Facebook video: ${args}`);
         
-        // Use fb-downloader to get the video
-        const result = await fbDownloader(args);
+        let videoUrl = null;
+        let videoTitle = 'Facebook Video';
+        let videoQuality = 'HD';
+        let errorMessages = [];
         
-        console.log('Download result received');
+        // Extract video ID from various Facebook URL formats
+        let videoId = null;
+        const patterns = [
+            /\/videos\/(\d+)/,
+            /\/watch\?v=(\d+)/,
+            /\/share\/v\/([^\/]+)/,
+            /\/reel\/(\d+)/,
+            /\/watch\/\?v=(\d+)/
+        ];
         
-        if (result && result.downloadUrl) {
-            // Download the video file
-            const videoUrl = result.downloadUrl;
-            const videoId = uuidv4();
-            const videoFilename = `video_${videoId}.mp4`;
-            const videoPath = path.join(DOWNLOADS_PATH, videoFilename);
-            
-            // Send progress update
-            ws.send(JSON.stringify({
-                type: 'shot_progress',
-                data: '⏳ Downloading video file... This may take a moment...'
-            }));
-            
-            // Download the actual video file
-            const response = await axios({
-                method: 'GET',
-                url: videoUrl,
-                responseType: 'stream'
-            });
-            
-            const writer = fs.createWriteStream(videoPath);
-            response.data.pipe(writer);
-            
-            await new Promise((resolve, reject) => {
-                writer.on('finish', resolve);
-                writer.on('error', reject);
-            });
-            
-            // Get file stats
-            const stats = fs.statSync(videoPath);
-            const fileSizeMB = (stats.size / (1024 * 1024)).toFixed(2);
-            
-            // Create file message
-            const fileMessage = {
-                userId: userId,
-                username: 'Bot',
-                message: `📹 Facebook Video Downloaded`,
-                timestamp: new Date().toISOString(),
-                type: 'file',
-                file: {
-                    name: result.title || 'Facebook Video.mp4',
-                    filename: videoFilename,
-                    size: stats.size,
-                    sizeMB: fileSizeMB,
-                    path: videoPath,
-                    url: `/downloads/${videoFilename}`,
-                    videoId: videoId,
-                    quality: result.quality || 'HD'
-                }
-            };
-            
-            // Save to messages
-            const messages = getMessages();
-            messages.push(fileMessage);
-            saveMessages(messages);
-            
-            // Send success message with video player
-            ws.send(JSON.stringify({
-                type: 'shot_success',
-                data: {
-                    message: '✅ Video downloaded successfully!',
-                    videoUrl: `/downloads/${videoFilename}`,
-                    filename: result.title || 'Facebook Video.mp4',
-                    size: fileSizeMB + ' MB',
-                    quality: result.quality || 'HD',
-                    fileId: videoId,
-                    note: '📥 Video has been downloaded and is now available in your chat. Click to play or download.'
-                }
-            }));
-            
-            // Broadcast to all users (if public)
-            broadcastMessage(null, {
-                type: 'file',
-                userId: userId,
-                username: 'Bot',
-                message: `📹 New video downloaded: ${result.title || 'Facebook Video'}`,
-                file: {
-                    name: result.title || 'Facebook Video.mp4',
-                    url: `/downloads/${videoFilename}`,
-                    size: fileSizeMB + ' MB',
-                    quality: result.quality || 'HD'
-                },
-                timestamp: new Date().toISOString()
-            });
-            
-        } else {
-            ws.send(JSON.stringify({
-                type: 'error',
-                data: '❌ Could not download video.\n\nPossible reasons:\n1. The video might be private or restricted\n2. The link might be invalid\n3. Facebook may have blocked the download\n\n💡 Try these alternatives:\n• Make sure the video is public\n• Try a different Facebook video link\n• Visit the link directly in your browser first'
-            }));
+        for (const pattern of patterns) {
+            const match = args.match(pattern);
+            if (match) {
+                videoId = match[1];
+                break;
+            }
         }
+        
+        // If we got a video ID, try to construct a direct link
+        if (videoId) {
+            console.log(`✅ Extracted video ID: ${videoId}`);
+            const watchUrl = `https://www.facebook.com/watch?v=${videoId}`;
+            
+            // METHOD 1: Try fb-downloader with watch URL
+            try {
+                console.log('Method 1: Trying fb-downloader with watch URL...');
+                const result = await fbDownloader(watchUrl);
+                
+                if (result && result.downloadUrl) {
+                    videoUrl = result.downloadUrl;
+                    videoTitle = result.title || 'Facebook Video';
+                    videoQuality = result.quality || 'HD';
+                    console.log('✅ fb-downloader succeeded');
+                } else if (result && result.urls && result.urls.length > 0) {
+                    const video = result.urls[0];
+                    videoUrl = video.url || video.downloadUrl;
+                    videoTitle = result.title || 'Facebook Video';
+                    videoQuality = video.quality || 'HD';
+                    console.log('✅ fb-downloader succeeded (alternative format)');
+                }
+            } catch (err) {
+                errorMessages.push(`fb-downloader: ${err.message}`);
+                console.log('❌ fb-downloader failed:', err.message);
+            }
+        }
+        
+        // METHOD 2: Try fb-downloader with original URL
+        if (!videoUrl) {
+            try {
+                console.log('Method 2: Trying fb-downloader with original URL...');
+                const result = await fbDownloader(args);
+                
+                if (result && result.downloadUrl) {
+                    videoUrl = result.downloadUrl;
+                    videoTitle = result.title || 'Facebook Video';
+                    videoQuality = result.quality || 'HD';
+                    console.log('✅ fb-downloader succeeded with original URL');
+                } else if (result && result.urls && result.urls.length > 0) {
+                    const video = result.urls[0];
+                    videoUrl = video.url || video.downloadUrl;
+                    videoTitle = result.title || 'Facebook Video';
+                    videoQuality = video.quality || 'HD';
+                    console.log('✅ fb-downloader succeeded (alternative format)');
+                }
+            } catch (err) {
+                errorMessages.push(`fb-downloader (original): ${err.message}`);
+                console.log('❌ fb-downloader with original URL failed:', err.message);
+            }
+        }
+        
+        // METHOD 3: Try alternative method - direct page scraping
+        if (!videoUrl) {
+            try {
+                console.log('Method 3: Trying direct page scraping...');
+                const response = await axios.get(args, {
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                    },
+                    timeout: 15000
+                });
+                
+                const html = response.data;
+                const videoPatterns = [
+                    /"playable_url":\s*"([^"]+)"/,
+                    /"src":"([^"]+\.mp4[^"]*)"/,
+                    /"video_url":"([^"]+)"/,
+                    /https:\/\/[^"'\s]+\.mp4[^"'\s]*/
+                ];
+                
+                for (const pattern of videoPatterns) {
+                    const match = html.match(pattern);
+                    if (match) {
+                        let foundUrl = match[1];
+                        foundUrl = foundUrl.replace(/\\/g, '');
+                        if (foundUrl.startsWith('http')) {
+                            videoUrl = foundUrl;
+                            console.log('✅ Found video URL in page source');
+                            break;
+                        }
+                    }
+                }
+            } catch (err) {
+                errorMessages.push(`Direct scraping: ${err.message}`);
+                console.log('❌ Direct scraping failed:', err.message);
+            }
+        }
+        
+        // If we found a video URL, download it
+        if (videoUrl) {
+            try {
+                const videoId2 = uuidv4();
+                const videoFilename = `video_${videoId2}.mp4`;
+                const videoPath = path.join(DOWNLOADS_PATH, videoFilename);
+                
+                ws.send(JSON.stringify({
+                    type: 'shot_progress',
+                    data: '⏳ Downloading video file... This may take a moment...'
+                }));
+                
+                const response = await axios({
+                    method: 'GET',
+                    url: videoUrl,
+                    responseType: 'stream',
+                    timeout: 60000,
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                    }
+                });
+                
+                const writer = fs.createWriteStream(videoPath);
+                response.data.pipe(writer);
+                
+                await new Promise((resolve, reject) => {
+                    writer.on('finish', resolve);
+                    writer.on('error', reject);
+                });
+                
+                const stats = fs.statSync(videoPath);
+                const fileSizeMB = (stats.size / (1024 * 1024)).toFixed(2);
+                
+                const fileMessage = {
+                    userId: userId,
+                    username: 'Bot',
+                    message: `📹 Facebook Video Downloaded`,
+                    timestamp: new Date().toISOString(),
+                    type: 'file',
+                    file: {
+                        name: videoTitle || 'Facebook Video.mp4',
+                        filename: videoFilename,
+                        size: stats.size,
+                        sizeMB: fileSizeMB,
+                        path: videoPath,
+                        url: `/downloads/${videoFilename}`,
+                        videoId: videoId2,
+                        quality: videoQuality || 'HD'
+                    }
+                };
+                
+                const messages = getMessages();
+                messages.push(fileMessage);
+                saveMessages(messages);
+                
+                ws.send(JSON.stringify({
+                    type: 'shot_success',
+                    data: {
+                        message: '✅ Video downloaded successfully!',
+                        videoUrl: `/downloads/${videoFilename}`,
+                        filename: videoTitle || 'Facebook Video.mp4',
+                        size: fileSizeMB + ' MB',
+                        quality: videoQuality || 'HD',
+                        fileId: videoId2,
+                        note: '📥 Video has been downloaded and is now available in your chat. Click to play or download.'
+                    }
+                }));
+                
+                broadcastMessage(null, {
+                    type: 'file',
+                    userId: userId,
+                    username: 'Bot',
+                    message: `📹 New video downloaded: ${videoTitle || 'Facebook Video'}`,
+                    file: {
+                        name: videoTitle || 'Facebook Video.mp4',
+                        url: `/downloads/${videoFilename}`,
+                        size: fileSizeMB + ' MB',
+                        quality: videoQuality || 'HD'
+                    },
+                    timestamp: new Date().toISOString()
+                });
+                
+                return;
+                
+            } catch (downloadError) {
+                console.error('Video download error:', downloadError);
+                ws.send(JSON.stringify({
+                    type: 'error',
+                    data: `❌ Error downloading video: ${downloadError.message}\n\n💡 The video URL was found but couldn't be downloaded. This might be due to network issues or the video being protected.`
+                }));
+                return;
+            }
+        }
+        
+        // If all methods failed
+        const errorSummary = errorMessages.join('\n');
+        ws.send(JSON.stringify({
+            type: 'error',
+            data: `❌ Could not download video.\n\nPossible reasons:\n1. The video might be private or restricted\n2. The link might be invalid\n3. Facebook may have blocked the download\n4. The video might be age-restricted\n\n💡 Try these alternatives:\n• Make sure the video is public\n• Try a different Facebook video link\n• Visit the link directly in your browser first\n\n🔧 Debug info:\n${errorSummary}`
+        }));
+        
     } catch (error) {
-        console.error('Facebook download error:', error.message);
+        console.error('Facebook download error:', error);
         ws.send(JSON.stringify({
             type: 'error',
             data: `❌ Download failed: ${error.message}\n\n💡 Tips:\n1. Make sure the video is public\n2. Try a different Facebook video link\n3. The video might be protected or removed`
@@ -939,6 +1198,9 @@ async function handleShot(args, ws, userId) {
     }
 }
 
+// ============================================
+// 👑 ADMIN UPGRADE COMMAND
+// ============================================
 async function handleUpgrade(args, ws, userId) {
     const users = getUsers();
     const currentUser = users[userId];
@@ -1013,6 +1275,9 @@ async function handleUpgrade(args, ws, userId) {
     }
 }
 
+// ============================================
+// 📊 TRIALS COMMAND
+// ============================================
 function handleTrials(ws, userId) {
     const trials = getUserTrials(userId);
     const users = getUsers();
@@ -1045,6 +1310,9 @@ function handleTrials(ws, userId) {
     }));
 }
 
+// ============================================
+// 📡 BROADCAST FUNCTION
+// ============================================
 function broadcastMessage(targetUserId, message) {
     const payload = JSON.stringify({
         type: 'public',
@@ -1065,15 +1333,15 @@ function broadcastMessage(targetUserId, message) {
     }
 }
 
-// Serve downloaded files
+// ============================================
+// 📁 STATIC FILES & ENDPOINTS
+// ============================================
 app.use('/downloads', express.static(DOWNLOADS_PATH));
 
-// Serve static files
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Health check endpoint
 app.get('/health', (req, res) => {
     res.status(200).json({ 
         status: 'OK', 
@@ -1085,7 +1353,6 @@ app.get('/health', (req, res) => {
     });
 });
 
-// Debug endpoint
 app.get('/debug-env', (req, res) => {
     const envVars = {
         WEATHER_API_KEY: process.env.WEATHER_API_KEY ? '✅ Set' : '❌ Missing',
@@ -1119,13 +1386,15 @@ app.get('/debug-env', (req, res) => {
     });
 });
 
-// Start server
+// ============================================
+// 🚀 START SERVER
+// ============================================
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`\n✅ Bot server running on http://localhost:${PORT}`);
     console.log(`✅ WebSocket server running on ws://localhost:${PORT}`);
     console.log(`✅ Health check: http://localhost:${PORT}/health`);
     console.log(`✅ Debug env: http://localhost:${PORT}/debug-env`);
-    console.log(`✅ Facebook video downloader (fb-downloader) is ready!`);
+    console.log(`✅ Facebook video downloader is ready!`);
     console.log(`✅ Videos will be saved to: ${DOWNLOADS_PATH}\n`);
 });
