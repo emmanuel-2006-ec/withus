@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bot Web Service</title>
     <style>
+        /* ============================================
+           DARK TECH THEME WITH ANIMATIONS
+           ============================================ */
         * {
             margin: 0;
             padding: 0;
@@ -13,23 +16,90 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #0a0e17;
             height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(102, 126, 234, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(118, 75, 162, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(46, 213, 115, 0.04) 0%, transparent 50%);
+            z-index: 0;
+            animation: backgroundPulse 10s ease-in-out infinite alternate;
+        }
+
+        @keyframes backgroundPulse {
+            0% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                linear-gradient(rgba(102, 126, 234, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(102, 126, 234, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: 0;
+            pointer-events: none;
         }
 
         .container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            width: 90%;
-            max-width: 800px;
-            height: 90vh;
+            position: relative;
+            z-index: 1;
+            background: rgba(14, 20, 34, 0.92);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(102, 126, 234, 0.15);
+            border-radius: 24px;
+            box-shadow: 
+                0 25px 80px rgba(0, 0, 0, 0.8),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05),
+                0 0 60px rgba(102, 126, 234, 0.05);
+            width: 92%;
+            max-width: 860px;
+            height: 92vh;
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            animation: containerAppear 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes containerAppear {
+            from { opacity: 0; transform: scale(0.96) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            border-radius: 26px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.3), rgba(118, 75, 162, 0.1), rgba(46, 213, 115, 0.1));
+            z-index: -1;
+            animation: borderGlow 4s ease-in-out infinite alternate;
+        }
+
+        @keyframes borderGlow {
+            0% { opacity: 0.3; }
+            100% { opacity: 0.8; }
         }
 
         /* Login Screen */
@@ -40,18 +110,51 @@
             align-items: center;
             height: 100%;
             padding: 40px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            position: relative;
+        }
+
+        #loginScreen::before {
+            content: '✦';
+            position: absolute;
+            font-size: 120px;
+            color: rgba(102, 126, 234, 0.04);
+            top: -20px;
+            right: -20px;
+            transform: rotate(15deg);
         }
 
         #loginScreen h1 {
-            color: white;
-            font-size: 32px;
-            margin-bottom: 10px;
+            color: #fff;
+            font-size: 34px;
+            margin-bottom: 8px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: none;
+            position: relative;
+        }
+
+        #loginScreen h1::after {
+            content: '⚡';
+            font-size: 24px;
+            -webkit-text-fill-color: initial;
+            margin-left: 8px;
+            animation: pulseGlow 2s ease-in-out infinite;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.4; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.1); }
         }
 
         #loginScreen .subtitle {
-            color: rgba(255,255,255,0.8);
+            color: rgba(255, 255, 255, 0.4);
             margin-bottom: 30px;
+            font-size: 14px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
         }
 
         .login-form {
@@ -61,90 +164,125 @@
 
         .login-form input {
             width: 100%;
-            padding: 15px;
-            margin-bottom: 15px;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            background: rgba(255,255,255,0.9);
+            padding: 14px 18px;
+            margin-bottom: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            font-size: 15px;
+            background: rgba(255, 255, 255, 0.04);
+            color: #e0e0e0;
+            transition: all 0.3s ease;
         }
 
         .login-form input:focus {
-            outline: 2px solid #fff;
+            outline: none;
+            border-color: rgba(102, 126, 234, 0.4);
+            background: rgba(255, 255, 255, 0.06);
+            box-shadow: 0 0 30px rgba(102, 126, 234, 0.05);
+        }
+
+        .login-form input::placeholder {
+            color: rgba(255, 255, 255, 0.2);
         }
 
         .login-form .btn-login {
             width: 100%;
-            padding: 15px;
-            background: #2ed573;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
             border: none;
-            border-radius: 10px;
-            font-size: 18px;
-            font-weight: bold;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s;
-            margin-top: 10px;
+            transition: all 0.3s ease;
+            margin-top: 6px;
+            position: relative;
+            overflow: hidden;
         }
 
         .login-form .btn-login:hover {
             transform: scale(1.02);
+            box-shadow: 0 8px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .login-form .btn-login::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .login-form .btn-login:hover::after {
+            opacity: 1;
         }
 
         .login-form .btn-register {
             width: 100%;
-            padding: 15px;
-            background: #ff6b6b;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 18px;
-            font-weight: bold;
+            padding: 14px;
+            background: rgba(255, 255, 255, 0.04);
+            color: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s;
+            transition: all 0.3s ease;
             margin-top: 10px;
         }
 
         .login-form .btn-register:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.1);
             transform: scale(1.02);
         }
 
         .login-error {
-            color: #ff4757;
-            background: rgba(255,255,255,0.9);
-            padding: 10px;
+            color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.08);
+            padding: 12px;
             border-radius: 10px;
-            margin-bottom: 15px;
+            margin-bottom: 14px;
             display: none;
+            font-size: 14px;
+            border: 1px solid rgba(255, 107, 107, 0.1);
         }
 
         .login-info {
-            color: rgba(255,255,255,0.7);
+            color: rgba(255, 255, 255, 0.25);
             font-size: 12px;
             margin-top: 20px;
             text-align: center;
+            line-height: 1.8;
         }
 
         .login-info strong {
-            color: rgba(255,255,255,0.9);
+            color: rgba(255, 255, 255, 0.4);
         }
 
         .divider {
             display: flex;
             align-items: center;
-            margin: 15px 0;
-            color: rgba(255,255,255,0.5);
+            margin: 16px 0;
+            color: rgba(255, 255, 255, 0.1);
         }
 
         .divider::before, .divider::after {
             content: '';
             flex: 1;
-            border-bottom: 1px solid rgba(255,255,255,0.2);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
         }
 
         .divider span {
-            padding: 0 10px;
-            font-size: 12px;
+            padding: 0 14px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
 
         /* Main Chat UI */
@@ -154,9 +292,8 @@
             height: 100%;
         }
 
+        /* Header */
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
             padding: 12px 20px;
             display: flex;
             justify-content: space-between;
@@ -164,10 +301,17 @@
             flex-wrap: wrap;
             gap: 8px;
             flex-shrink: 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            background: rgba(0, 0, 0, 0.2);
         }
 
         .header h1 {
-            font-size: 18px;
+            font-size: 17px;
+            font-weight: 600;
+            color: #fff;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         .header-info {
@@ -179,248 +323,307 @@
         }
 
         .header-info .user-badge {
-            background: rgba(255,255,255,0.2);
-            padding: 4px 10px;
-            border-radius: 15px;
+            background: rgba(102, 126, 234, 0.12);
+            padding: 4px 12px;
+            border-radius: 20px;
             white-space: nowrap;
             font-size: 11px;
+            color: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(102, 126, 234, 0.1);
         }
 
         .header-info .status-indicator {
             display: inline-block;
-            width: 8px;
-            height: 8px;
+            width: 7px;
+            height: 7px;
             border-radius: 50%;
             margin-right: 4px;
+            animation: statusPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes statusPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
         }
 
         .status-indicator.online {
             background: #2ed573;
+            box-shadow: 0 0 10px rgba(46, 213, 115, 0.3);
         }
 
         .status-indicator.offline {
             background: #ff4757;
+            box-shadow: 0 0 10px rgba(255, 71, 87, 0.3);
+            animation: none;
+        }
+
+        .status-indicator.connecting {
+            background: #ffa502;
+            box-shadow: 0 0 10px rgba(255, 165, 2, 0.3);
+            animation: statusPulse 0.8s ease-in-out infinite;
+        }
+
+        .header-info .status-text {
+            color: rgba(255, 255, 255, 0.4);
         }
 
         .logout-btn {
-            background: rgba(255,255,255,0.2);
-            color: white;
-            border: 1px solid rgba(255,255,255,0.3);
-            padding: 4px 12px;
-            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.04);
+            color: rgba(255, 255, 255, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            padding: 4px 14px;
+            border-radius: 20px;
             cursor: pointer;
             font-size: 11px;
+            transition: all 0.3s ease;
         }
 
         .logout-btn:hover {
-            background: rgba(255,255,255,0.3);
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.7);
         }
 
+        /* Chat Area */
         .chat-area {
             flex: 1;
-            padding: 15px 20px;
+            padding: 16px 20px;
             overflow-y: auto;
-            background: #f5f5f5;
+            background: rgba(0, 0, 0, 0.15);
+            scroll-behavior: smooth;
         }
 
+        .chat-area::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .chat-area::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 2px;
+        }
+
+        .chat-area::-webkit-scrollbar-thumb {
+            background: rgba(102, 126, 234, 0.3);
+            border-radius: 2px;
+        }
+
+        /* Messages */
         .message {
             margin-bottom: 12px;
-            padding: 10px 14px;
+            padding: 10px 16px;
             border-radius: 12px;
-            max-width: 85%;
+            max-width: 82%;
             word-wrap: break-word;
-            animation: fadeIn 0.3s;
+            animation: messageAppear 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: all 0.2s ease;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-8px); }
-            to { opacity: 1; transform: translateY(0); }
+        @keyframes messageAppear {
+            from { opacity: 0; transform: translateY(12px) scale(0.96); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
 
         .message.received {
-            background: white;
-            color: #333;
+            background: rgba(255, 255, 255, 0.04);
+            color: #d0d0d0;
             align-self: flex-start;
-            border: 1px solid #e0e0e0;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .message.received:hover {
+            border-color: rgba(255, 255, 255, 0.06);
         }
 
         .message.sent {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.25), rgba(118, 75, 162, 0.25));
+            color: #fff;
             align-self: flex-end;
             margin-left: auto;
+            border: 1px solid rgba(102, 126, 234, 0.1);
         }
 
         .message.error {
-            background: #ff4757;
-            color: white;
+            background: rgba(255, 71, 87, 0.1);
+            color: #ff6b6b;
+            border: 1px solid rgba(255, 71, 87, 0.1);
         }
 
         .message.system {
-            background: #2ed573;
-            color: white;
+            background: rgba(46, 213, 115, 0.06);
+            color: #2ed573;
             text-align: center;
             width: 100%;
             max-width: 100%;
+            border: 1px solid rgba(46, 213, 115, 0.06);
+            font-size: 13px;
         }
 
         .message.weather, .message.news {
-            background: #f8f9fa;
+            background: rgba(255, 255, 255, 0.02);
             width: 100%;
             max-width: 100%;
-            padding: 15px;
-            border-radius: 12px;
+            padding: 16px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
         }
 
         .message.trial-info {
-            background: #fff3cd;
-            border-left: 4px solid #ffc107;
+            background: rgba(255, 165, 2, 0.04);
+            border-left: 3px solid #ffa502;
             width: 100%;
             max-width: 100%;
+            color: #ffa502;
         }
 
         .message.upgrade-info {
-            background: #d1ecf1;
-            border-left: 4px solid #17a2b8;
+            background: rgba(23, 162, 184, 0.04);
+            border-left: 3px solid #17a2b8;
             width: 100%;
             max-width: 100%;
+            color: #17a2b8;
         }
 
         .message.read-line {
-            background: #e8f5e9;
-            border-left: 4px solid #4caf50;
+            background: rgba(46, 213, 115, 0.04);
+            border-left: 3px solid #2ed573;
             width: 100%;
             max-width: 100%;
             font-family: 'Courier New', monospace;
-            animation: highlightLine 0.5s;
+            font-size: 13px;
+            color: #8bc34a;
+            animation: highlightLine 0.5s ease;
         }
 
         @keyframes highlightLine {
-            from { background: #c8e6c9; transform: scale(0.98); }
-            to { background: #e8f5e9; transform: scale(1); }
+            from { background: rgba(46, 213, 115, 0.1); transform: scale(0.98); }
+            to { background: rgba(46, 213, 115, 0.04); transform: scale(1); }
         }
 
         .message.file-message {
-            background: white;
-            border: 2px solid #667eea;
-            border-radius: 15px;
+            background: rgba(102, 126, 234, 0.04);
+            border: 1px solid rgba(102, 126, 234, 0.1);
+            border-radius: 16px;
             width: 100%;
             max-width: 100%;
-            padding: 15px;
+            padding: 16px;
         }
 
         .file-message video {
             max-width: 100%;
             max-height: 400px;
-            border-radius: 10px;
+            border-radius: 12px;
             margin-top: 10px;
         }
 
         .file-message .file-info {
             margin-top: 10px;
             font-size: 12px;
-            color: #666;
+            color: rgba(255, 255, 255, 0.3);
         }
 
         .file-message .download-btn {
             display: inline-block;
             margin-top: 10px;
             padding: 8px 20px;
-            background: #667eea;
+            background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
             border-radius: 20px;
             text-decoration: none;
             font-size: 13px;
+            transition: all 0.3s ease;
         }
 
         .file-message .download-btn:hover {
-            background: #5a67d8;
+            transform: scale(1.05);
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
         }
 
-        /* Weather specific styles */
+        /* Weather Specific */
         .weather-day {
             display: flex;
             align-items: center;
             gap: 15px;
-            padding: 10px;
+            padding: 10px 14px;
             margin-bottom: 8px;
-            background: white;
-            border-radius: 10px;
-            border: 1px solid #e0e0e0;
-            transition: transform 0.2s;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            transition: all 0.3s ease;
         }
         .weather-day:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            background: rgba(255, 255, 255, 0.04);
+            transform: translateX(4px);
         }
         .weather-day .day-name {
             min-width: 80px;
             text-align: center;
-            font-weight: bold;
+            font-weight: 600;
             font-size: 14px;
+            color: #fff;
         }
         .weather-day .day-name .date {
             font-size: 11px;
             font-weight: normal;
-            color: #888;
+            color: rgba(255, 255, 255, 0.25);
         }
         .weather-day .weather-icon {
             flex: 0 0 50px;
             text-align: center;
         }
         .weather-day .weather-icon img {
-            width: 50px;
-            height: 50px;
+            width: 48px;
+            height: 48px;
+            filter: drop-shadow(0 0 10px rgba(102, 126, 234, 0.1));
         }
         .weather-day .weather-info {
             flex: 1;
         }
         .weather-day .weather-info .temp {
-            font-size: 16px;
-            font-weight: bold;
+            font-size: 17px;
+            font-weight: 600;
+            color: #fff;
         }
         .weather-day .weather-info .temp-range {
             font-size: 12px;
             font-weight: normal;
-            color: #888;
+            color: rgba(255, 255, 255, 0.25);
         }
         .weather-day .weather-info .desc {
             font-size: 13px;
-            color: #444;
+            color: rgba(255, 255, 255, 0.4);
         }
         .weather-day .weather-details {
             text-align: right;
             font-size: 12px;
-            color: #666;
+            color: rgba(255, 255, 255, 0.3);
         }
         .weather-day .weather-details div {
             margin: 2px 0;
         }
 
-        /* News specific styles */
+        /* News Specific */
         .news-article {
             display: flex;
-            gap: 12px;
-            padding: 12px;
+            gap: 14px;
+            padding: 14px;
             margin-bottom: 10px;
-            background: white;
-            border-radius: 10px;
-            border: 1px solid #e0e0e0;
-            transition: transform 0.2s;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            transition: all 0.3s ease;
         }
         .news-article:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            background: rgba(255, 255, 255, 0.04);
+            transform: translateX(4px);
         }
         .news-article.featured {
-            border-left: 4px solid #667eea;
+            border-left: 3px solid #667eea;
         }
         .news-article .news-image {
             flex: 0 0 120px;
             height: 80px;
             overflow: hidden;
             border-radius: 8px;
-            background: #f0f0f0;
+            background: rgba(255, 255, 255, 0.02);
         }
         .news-article .news-image img {
             width: 100%;
@@ -432,21 +635,21 @@
             min-width: 0;
         }
         .news-article .news-content .title {
-            font-weight: bold;
+            font-weight: 600;
             font-size: 14px;
-            color: #333;
+            color: #fff;
             margin-bottom: 4px;
         }
         .news-article .news-content .description {
             font-size: 13px;
-            color: #555;
+            color: rgba(255, 255, 255, 0.4);
             margin-bottom: 6px;
         }
         .news-article .news-content .meta {
             display: flex;
             gap: 12px;
             font-size: 11px;
-            color: #888;
+            color: rgba(255, 255, 255, 0.2);
             flex-wrap: wrap;
         }
         .news-article .news-content .read-link {
@@ -455,16 +658,17 @@
             font-size: 12px;
             color: #667eea;
             text-decoration: none;
+            transition: all 0.3s ease;
         }
         .news-article .news-content .read-link:hover {
-            text-decoration: underline;
+            color: #764ba2;
         }
 
-        /* Input area */
+        /* Input Area */
         .input-area {
             padding: 12px 20px;
-            background: white;
-            border-top: 1px solid #e0e0e0;
+            background: rgba(0, 0, 0, 0.2);
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
             display: flex;
             gap: 10px;
             flex-shrink: 0;
@@ -473,38 +677,47 @@
         .input-area input {
             flex: 1;
             padding: 10px 16px;
-            border: 2px solid #e0e0e0;
+            border: 1px solid rgba(255, 255, 255, 0.04);
             border-radius: 25px;
             font-size: 14px;
             outline: none;
-            transition: border-color 0.3s;
+            background: rgba(255, 255, 255, 0.04);
+            color: #e0e0e0;
+            transition: all 0.3s ease;
         }
 
         .input-area input:focus {
-            border-color: #667eea;
+            border-color: rgba(102, 126, 234, 0.2);
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .input-area input::placeholder {
+            color: rgba(255, 255, 255, 0.15);
         }
 
         .input-area button {
             padding: 10px 24px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
             border: none;
             border-radius: 25px;
             font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s;
+            transition: all 0.3s ease;
             white-space: nowrap;
         }
 
         .input-area button:hover {
             transform: scale(1.05);
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.2);
         }
 
-        /* File upload area */
+        /* File Upload */
         .file-upload-area {
-            padding: 10px 20px;
-            background: #f8f8f8;
-            border-top: 1px solid #e0e0e0;
+            padding: 8px 20px;
+            background: rgba(0, 0, 0, 0.1);
+            border-top: 1px solid rgba(255, 255, 255, 0.02);
             display: none;
             flex-shrink: 0;
             flex-wrap: wrap;
@@ -520,37 +733,65 @@
             flex: 1;
             min-width: 150px;
             padding: 6px;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 12px;
+        }
+
+        .file-upload-area input[type="file"]::file-selector-button {
+            padding: 6px 16px;
+            background: rgba(102, 126, 234, 0.1);
+            color: #fff;
+            border: 1px solid rgba(102, 126, 234, 0.1);
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .file-upload-area input[type="file"]::file-selector-button:hover {
+            background: rgba(102, 126, 234, 0.2);
         }
 
         .file-upload-area button {
             padding: 6px 16px;
-            background: #2ed573;
-            color: white;
-            border: none;
-            border-radius: 15px;
+            background: rgba(46, 213, 115, 0.1);
+            color: #2ed573;
+            border: 1px solid rgba(46, 213, 115, 0.1);
+            border-radius: 20px;
             cursor: pointer;
-            font-size: 13px;
+            font-size: 12px;
+            transition: all 0.3s ease;
             white-space: nowrap;
         }
 
+        .file-upload-area button:hover {
+            background: rgba(46, 213, 115, 0.15);
+        }
+
         .file-upload-area button.stop-read {
-            background: #ff4757;
+            background: rgba(255, 71, 87, 0.1);
+            color: #ff6b6b;
+            border-color: rgba(255, 71, 87, 0.1);
+        }
+
+        .file-upload-area button.stop-read:hover {
+            background: rgba(255, 71, 87, 0.15);
         }
 
         .file-upload-area .file-info {
-            color: #666;
+            color: rgba(255, 255, 255, 0.2);
             font-size: 12px;
             white-space: nowrap;
         }
 
-        /* Reading progress */
+        /* Reading Progress */
         .reading-progress {
-            padding: 8px 20px;
-            background: #e8f5e9;
-            border-top: 1px solid #4caf50;
+            padding: 6px 20px;
+            background: rgba(46, 213, 115, 0.02);
+            border-top: 1px solid rgba(46, 213, 115, 0.04);
             display: none;
-            font-size: 13px;
-            color: #2e7d32;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.4);
             align-items: center;
             gap: 10px;
             flex-wrap: wrap;
@@ -564,38 +805,44 @@
         .reading-progress .progress-bar {
             flex: 1;
             min-width: 80px;
-            height: 6px;
-            background: #c8e6c9;
-            border-radius: 3px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 2px;
             overflow: hidden;
         }
 
         .reading-progress .progress-bar .progress-fill {
             height: 100%;
-            background: #4caf50;
-            border-radius: 3px;
-            transition: width 0.3s;
+            background: linear-gradient(90deg, #667eea, #2ed573);
+            border-radius: 2px;
+            transition: width 0.3s ease;
             width: 0%;
         }
 
         .reading-progress .stop-speech-btn {
             padding: 3px 12px;
-            background: #ff4757;
-            color: white;
-            border: none;
-            border-radius: 10px;
+            background: rgba(255, 71, 87, 0.1);
+            color: #ff6b6b;
+            border: 1px solid rgba(255, 71, 87, 0.1);
+            border-radius: 20px;
             cursor: pointer;
             font-size: 11px;
+            transition: all 0.3s ease;
         }
 
         .reading-progress .stop-speech-btn:hover {
-            background: #ff6b81;
+            background: rgba(255, 71, 87, 0.15);
         }
 
+        /* Responsive */
         @media (max-width: 600px) {
             .container {
                 width: 100%;
                 height: 100vh;
+                border-radius: 0;
+            }
+
+            .container::before {
                 border-radius: 0;
             }
 
@@ -604,7 +851,7 @@
             }
 
             .header h1 {
-                font-size: 15px;
+                font-size: 14px;
             }
 
             .header-info {
@@ -643,6 +890,43 @@
             .reading-progress {
                 font-size: 11px;
             }
+
+            #loginScreen {
+                padding: 24px;
+            }
+            #loginScreen h1 {
+                font-size: 26px;
+            }
+        }
+
+        /* Scrollbar for Chat */
+        .chat-area::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .chat-area::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 2px;
+        }
+
+        .chat-area::-webkit-scrollbar-thumb {
+            background: rgba(102, 126, 234, 0.2);
+            border-radius: 2px;
+        }
+
+        .chat-area::-webkit-scrollbar-thumb:hover {
+            background: rgba(102, 126, 234, 0.3);
+        }
+
+        /* Reconnecting Animation */
+        @keyframes reconnectPulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+
+        .reconnecting {
+            animation: reconnectPulse 1s ease-in-out infinite;
+            color: #ffa502 !important;
         }
     </style>
 </head>
@@ -650,14 +934,14 @@
     <div class="container">
         <!-- Login Screen -->
         <div id="loginScreen">
-            <h1>🤖 Bot Service</h1>
+            <h1>Bot Service</h1>
             <p class="subtitle">Login or Create Account</p>
             <div class="login-form">
                 <div class="login-error" id="loginError"></div>
-                <input type="text" id="loginUsername" placeholder="Choose a username" value="">
-                <input type="password" id="loginPassword" placeholder="Choose a password" value="">
+                <input type="text" id="loginUsername" placeholder="Username" value="">
+                <input type="password" id="loginPassword" placeholder="Password" value="">
                 <button class="btn-login" onclick="login(false)">🔑 Login</button>
-                <div class="divider"><span>OR</span></div>
+                <div class="divider"><span>or</span></div>
                 <button class="btn-register" onclick="login(true)">📝 Register New Account</button>
                 <div class="login-info">
                     <p>👑 <strong>Admin:</strong> blessed / emmanuel</p>
@@ -668,24 +952,27 @@
 
         <!-- Main UI -->
         <div id="mainUI">
+            <!-- Header -->
             <div class="header">
-                <h1>🤖 Bot Service</h1>
+                <h1>⚡ Bot Service</h1>
                 <div class="header-info">
                     <span class="user-badge" id="userBadge">👤 Loading...</span>
                     <span>
                         <span class="status-indicator online" id="statusIndicator"></span>
-                        <span id="statusText">Connected</span>
+                        <span class="status-text" id="statusText">Connected</span>
                     </span>
                     <button class="logout-btn" onclick="logout()">Logout</button>
                 </div>
             </div>
 
+            <!-- Chat Area -->
             <div class="chat-area" id="chatArea">
                 <div class="message received system">
                     🤖 Welcome! Type <strong>.assist</strong> to see all available commands
                 </div>
             </div>
 
+            <!-- Reading Progress -->
             <div class="reading-progress" id="readingProgress">
                 <span>📖 Reading:</span>
                 <span id="readingStatus">Loading...</span>
@@ -696,26 +983,128 @@
                 <button class="stop-speech-btn" onclick="stopReading()">⏹️ Stop</button>
             </div>
 
+            <!-- File Upload -->
             <div class="file-upload-area" id="fileUploadArea">
                 <input type="file" id="fileInput" accept=".txt,.pdf,.doc,.docx">
-                <button onclick="uploadFile()">📤 Upload & Read Aloud</button>
-                <button class="stop-read" onclick="stopReading()">⏹️ Stop Reading</button>
+                <button onclick="uploadFile()">📤 Upload & Read</button>
+                <button class="stop-read" onclick="stopReading()">⏹️ Stop</button>
                 <span class="file-info" id="fileInfo">No file selected</span>
             </div>
 
+            <!-- Input Area -->
             <div class="input-area">
-                <input type="text" id="commandInput" placeholder="Type a command... (e.g., .weather, .news, .assist)">
+                <input type="text" id="commandInput" placeholder="Type a command... (.weather, .news, .assist)">
                 <button onclick="sendCommand()">Send</button>
             </div>
         </div>
     </div>
 
     <script>
+        // ============================================
+        // STATE
+        // ============================================
         let ws;
         let currentUser = null;
         let userId = null;
         let token = null;
         let isReading = false;
+        let reconnectAttempts = 0;
+        const MAX_RECONNECT_ATTEMPTS = 5;
+        let reconnectTimeout = null;
+
+        // ============================================
+        // CONNECTION MANAGEMENT
+        // ============================================
+        function connectWebSocket(isReconnect = false) {
+            if (ws && ws.readyState === WebSocket.OPEN) return;
+
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}`;
+
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                console.log('✅ WebSocket connected');
+                reconnectAttempts = 0;
+                updateStatus('online', 'Connected');
+                
+                if (currentUser) {
+                    ws.send(JSON.stringify({
+                        type: 'auth',
+                        username: currentUser.username,
+                        password: currentUser.password || '',
+                        isNewUser: false
+                    }));
+                }
+            };
+
+            ws.onclose = () => {
+                console.log('❌ WebSocket disconnected');
+                updateStatus('offline', 'Disconnected');
+                handleDisconnect();
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                updateStatus('offline', 'Error');
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'auth_success') {
+                        currentUser = data.data;
+                        userId = data.data.userId;
+                        token = data.data.token;
+                        updateStatus('online', 'Connected');
+                        updateUserBadge();
+                    } else {
+                        handleMessage(data);
+                    }
+                } catch (error) {
+                    console.error('Error parsing message:', error);
+                }
+            };
+        }
+
+        function handleDisconnect() {
+            if (reconnectTimeout) {
+                clearTimeout(reconnectTimeout);
+                reconnectTimeout = null;
+            }
+
+            if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+                reconnectAttempts++;
+                const delay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), 30000);
+                updateStatus('connecting', `Reconnecting in ${Math.round(delay/1000)}s... (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
+                
+                reconnectTimeout = setTimeout(() => {
+                    if (!ws || ws.readyState !== WebSocket.OPEN) {
+                        connectWebSocket(true);
+                    }
+                }, delay);
+            } else {
+                updateStatus('offline', 'Disconnected - Please refresh');
+                addMessage('error', '❌ Connection lost. Please refresh the page to reconnect.');
+            }
+        }
+
+        function updateStatus(state, text) {
+            const indicator = document.getElementById('statusIndicator');
+            const textEl = document.getElementById('statusText');
+            
+            indicator.className = 'status-indicator ' + state;
+            textEl.textContent = text;
+        }
+
+        function updateUserBadge() {
+            if (!currentUser) return;
+            const role = currentUser.role === 'admin' ? '👑 Admin' : '👤 User';
+            const trialInfo = currentUser.role !== 'admin' ? 
+                ` | ${currentUser.trials.used}/${currentUser.trials.total} trials` : '';
+            document.getElementById('userBadge').textContent = 
+                `${role}: ${currentUser.username} (${currentUser.userId})${trialInfo}`;
+        }
 
         // ============================================
         // AUTHENTICATION
@@ -733,72 +1122,68 @@
 
             errorDiv.style.display = 'none';
 
-            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsUrl = `${protocol}//${window.location.host}`;
+            currentUser = { username, password };
 
-            ws = new WebSocket(wsUrl);
+            connectWebSocket();
 
-            ws.onopen = () => {
-                ws.send(JSON.stringify({
-                    type: 'auth',
-                    username: username,
-                    password: password,
-                    isNewUser: isNewUser
-                }));
+            const authTimeout = setTimeout(() => {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({
+                        type: 'auth',
+                        username: username,
+                        password: password,
+                        isNewUser: isNewUser
+                    }));
+                }
+            }, 100);
+
+            const authHandler = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'auth_success') {
+                        ws.removeEventListener('message', authHandler);
+                        handleAuthSuccess(data);
+                    } else if (data.type === 'auth_failed') {
+                        ws.removeEventListener('message', authHandler);
+                        errorDiv.style.display = 'block';
+                        errorDiv.textContent = data.data;
+                    }
+                } catch (error) {
+                    console.error('Auth error:', error);
+                }
             };
 
-            ws.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                handleAuthMessage(data);
-            };
-
-            ws.onclose = () => {
-                console.log('WebSocket disconnected');
-                document.getElementById('statusIndicator').className = 'status-indicator offline';
-                document.getElementById('statusText').textContent = 'Disconnected';
-            };
-
-            ws.onerror = (error) => {
-                errorDiv.style.display = 'block';
-                errorDiv.textContent = 'Connection error. Please try again.';
-            };
+            ws.addEventListener('message', authHandler);
         }
 
-        function handleAuthMessage(data) {
-            if (data.type === 'auth_success') {
-                currentUser = data.data;
-                userId = data.data.userId;
-                token = data.data.token;
+        function handleAuthSuccess(data) {
+            currentUser = data.data;
+            userId = data.data.userId;
+            token = data.data.token;
 
-                document.getElementById('loginScreen').style.display = 'none';
-                document.getElementById('mainUI').style.display = 'flex';
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('mainUI').style.display = 'flex';
 
-                const role = currentUser.role === 'admin' ? '👑 Admin' : '👤 User';
-                const trialInfo = currentUser.role !== 'admin' ? 
-                    ` | ${currentUser.trials.used}/${currentUser.trials.total} trials` : '';
-                document.getElementById('userBadge').textContent = 
-                    `${role}: ${currentUser.username} (${currentUser.userId})${trialInfo}`;
+            updateUserBadge();
 
-                if (data.data.isNewUser) {
-                    addMessage('system', '🎉 Account created successfully! You have 5 free trials.');
-                }
+            if (data.data.isNewUser) {
+                addMessage('system', '🎉 Account created successfully! You have 5 free trials.');
+            }
 
-                ws.onmessage = (event) => {
+            ws.onmessage = (event) => {
+                try {
                     const msg = JSON.parse(event.data);
-                    handleMessage(msg);
-                };
-
-                document.getElementById('statusIndicator').className = 'status-indicator online';
-                document.getElementById('statusText').textContent = 'Connected';
-
-                addMessage('system', `✅ Logged in as ${currentUser.username} (${currentUser.userId})`);
-                if (currentUser.role === 'admin') {
-                    addMessage('system', '👑 You are logged in as Admin');
+                    if (msg.type !== 'auth_success') {
+                        handleMessage(msg);
+                    }
+                } catch (error) {
+                    console.error('Message error:', error);
                 }
+            };
 
-            } else if (data.type === 'auth_failed') {
-                document.getElementById('loginError').style.display = 'block';
-                document.getElementById('loginError').textContent = data.data;
+            addMessage('system', `✅ Logged in as ${currentUser.username} (${currentUser.userId})`);
+            if (currentUser.role === 'admin') {
+                addMessage('system', '👑 You are logged in as Admin');
             }
         }
 
@@ -806,10 +1191,7 @@
         // TEXT-TO-SPEECH
         // ============================================
         function speakText(text) {
-            if (!('speechSynthesis' in window)) {
-                console.warn('Speech synthesis not supported');
-                return;
-            }
+            if (!('speechSynthesis' in window)) return;
             
             window.speechSynthesis.cancel();
             
@@ -824,9 +1206,7 @@
                 v.lang.startsWith('en') && 
                 (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Samantha'))
             );
-            if (preferredVoice) {
-                utterance.voice = preferredVoice;
-            }
+            if (preferredVoice) utterance.voice = preferredVoice;
             
             window.speechSynthesis.speak(utterance);
         }
@@ -835,19 +1215,19 @@
         // MESSAGE HANDLING
         // ============================================
         function handleMessage(data) {
-            console.log('Received message:', data.type);
+            console.log('📨 Message type:', data.type);
 
             switch(data.type) {
-                // ---------- WEATHER ----------
+                // ── WEATHER ──
                 case 'weather':
                     const weatherData = data.data;
                     let weatherHTML = `
                         <div class="message weather">
-                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
                                 <span style="font-size: 28px;">🌤️</span>
                                 <div>
-                                    <strong style="font-size: 18px;">Weather Forecast</strong>
-                                    <div style="font-size: 14px; color: #666;">
+                                    <strong style="font-size: 18px; color: #fff;">Weather Forecast</strong>
+                                    <div style="font-size: 13px; color: rgba(255,255,255,0.3);">
                                         ${weatherData.city}${weatherData.country ? ', ' + weatherData.country : ''}
                                     </div>
                                 </div>
@@ -888,22 +1268,22 @@
                     });
                     
                     if (data.data.note) {
-                        weatherHTML += `<div style="margin-top: 10px; font-size: 12px; color: #ff6b6b;">${data.data.note}</div>`;
+                        weatherHTML += `<div style="margin-top: 12px; font-size: 12px; color: #ff6b6b;">${data.data.note}</div>`;
                     }
                     weatherHTML += '</div>';
                     document.getElementById('chatArea').innerHTML += weatherHTML;
                     break;
 
-                // ---------- NEWS ----------
+                // ── NEWS ──
                 case 'news':
                     const newsData = data.data;
                     let newsHTML = `
                         <div class="message news">
-                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
                                 <span style="font-size: 28px;">📰</span>
                                 <div>
-                                    <strong style="font-size: 18px;">${newsData.category === 'malawi' ? '🇲🇼 Malawi' : '🌍 Global'} News</strong>
-                                    <div style="font-size: 12px; color: #666;">${newsData.total || 0} articles found</div>
+                                    <strong style="font-size: 18px; color: #fff;">${newsData.category === 'malawi' ? '🇲🇼 Malawi' : '🌍 Global'} News</strong>
+                                    <div style="font-size: 12px; color: rgba(255,255,255,0.2);">${newsData.total || 0} articles</div>
                                 </div>
                             </div>
                     `;
@@ -935,13 +1315,13 @@
                     });
                     
                     if (data.data.note) {
-                        newsHTML += `<div style="margin-top: 10px; font-size: 12px; color: #ff6b6b;">${data.data.note}</div>`;
+                        newsHTML += `<div style="margin-top: 12px; font-size: 12px; color: #ff6b6b;">${data.data.note}</div>`;
                     }
                     newsHTML += '</div>';
                     document.getElementById('chatArea').innerHTML += newsHTML;
                     break;
 
-                // ---------- READ ----------
+                // ── READ ──
                 case 'read_prompt':
                     document.getElementById('fileUploadArea').classList.add('active');
                     document.getElementById('fileInfo').textContent = 'Ready for upload';
@@ -976,13 +1356,13 @@
                     }
                     break;
 
-                // ---------- PUBLIC MESSAGES ----------
+                // ── PUBLIC MESSAGES ──
                 case 'public':
                     if (data.data.type === 'file') {
                         addMessage('received', `
                             <div class="file-message">
-                                <strong>📹 ${data.data.message}</strong><br>
-                                <video controls style="max-width: 100%; max-height: 400px; border-radius: 10px; margin-top: 10px;">
+                                <strong style="color: #fff;">📹 ${data.data.message}</strong><br>
+                                <video controls style="max-width: 100%; max-height: 400px; border-radius: 12px; margin-top: 10px;">
                                     <source src="${data.data.file.url}" type="video/mp4">
                                     Your browser does not support the video tag.
                                 </video>
@@ -1011,7 +1391,7 @@
                 case 'developer':
                     const dev = data.data;
                     addMessage('received', `
-                        <strong>👨‍💻 Developer Information</strong><br><br>
+                        <strong style="color: #fff;">👨‍💻 Developer Information</strong><br><br>
                         <strong>Name:</strong> ${dev.name}<br>
                         <strong>Education:</strong> ${dev.education}<br>
                         <strong>Program:</strong> ${dev.program}<br>
@@ -1021,43 +1401,118 @@
 
                 case 'tune':
                     addMessage('received', `
-                        <strong>🔄 Tuned Text</strong><br><br>
+                        <strong style="color: #fff;">🔄 Tuned Text</strong><br><br>
                         <strong>Original:</strong><br>${data.data.original}<br><br>
                         <strong>Humanized:</strong><br>${data.data.humanized}
                     `);
                     break;
 
-                // ---------- SHOT ----------
+                // ── SHOT ──
                 case 'shot_success':
-                    addMessage('received', `
-                        <div class="file-message">
-                            <strong>📹 ${data.data.message}</strong><br>
-                            <video controls style="max-width: 100%; max-height: 400px; border-radius: 10px; margin-top: 10px;">
-                                <source src="${data.data.videoUrl}" type="video/mp4">
-                                Your browser does not support the video tag.
-                            </video>
-                            <div class="file-info">
-                                📁 ${data.data.filename} (${data.data.size}) 
-                                ${data.data.quality ? `| Quality: ${data.data.quality}` : ''}
+                    if (data.data.downloadLinks) {
+                        let linksHTML = `
+                            <div class="message file-message">
+                                <div style="margin-bottom: 12px;">
+                                    <strong style="color: #fff;">📹 ${data.data.message}</strong>
+                                </div>
+                                <div style="font-size: 13px; color: rgba(255,255,255,0.4); margin-bottom: 12px;">
+                                    🆔 Video ID: ${data.data.videoId}<br>
+                                    🔗 Video URL: <a href="${data.data.videoUrl}" target="_blank" style="color: #667eea;">${data.data.videoUrl}</a>
+                                </div>
+                                <div style="font-weight: 600; margin-bottom: 10px; color: #fff;">${data.data.note}</div>
+                        `;
+                        
+                        data.data.downloadLinks.forEach(link => {
+                            linksHTML += `
+                                <div style="background: rgba(255,255,255,0.02); padding: 10px 14px; border-radius: 10px; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.03);">
+                                    <div style="font-weight: 500; color: #fff;">${link.name}</div>
+                                    <div style="font-size: 12px; color: rgba(255,255,255,0.3); margin: 4px 0;">
+                                        <a href="${link.url}" target="_blank" style="color: #667eea;">${link.url}</a>
+                                    </div>
+                                    <div style="font-size: 11px; color: rgba(255,255,255,0.2); white-space: pre-line;">${link.instructions}</div>
+                                </div>
+                            `;
+                        });
+                        
+                        linksHTML += `
+                                ${data.data.instruction ? `<div style="margin-top: 12px; font-size: 12px; color: rgba(255,255,255,0.3);">💡 ${data.data.instruction}</div>` : ''}
                             </div>
-                            <a href="${data.data.videoUrl}" download="${data.data.filename}" class="download-btn">
-                                ⬇️ Download Video
-                            </a>
-                            ${data.data.note ? `<div style="margin-top: 8px; font-size: 12px; color: #888;">${data.data.note}</div>` : ''}
-                        </div>
-                    `);
+                        `;
+                        addMessage('received', linksHTML);
+                    } else {
+                        addMessage('received', `
+                            <div class="file-message">
+                                <strong style="color: #fff;">📹 ${data.data.message}</strong><br>
+                                <video controls style="max-width: 100%; max-height: 400px; border-radius: 12px; margin-top: 10px;">
+                                    <source src="${data.data.videoUrl}" type="video/mp4">
+                                    Your browser does not support the video tag.
+                                </video>
+                                <div class="file-info">
+                                    📁 ${data.data.filename || 'Facebook Video'} (${data.data.size || 'Unknown'}) 
+                                    ${data.data.quality ? `| Quality: ${data.data.quality}` : ''}
+                                </div>
+                                <a href="${data.data.videoUrl}" download="${data.data.filename || 'video.mp4'}" class="download-btn">
+                                    ⬇️ Download Video
+                                </a>
+                                ${data.data.note ? `<div style="margin-top: 8px; font-size: 12px; color: rgba(255,255,255,0.3);">${data.data.note}</div>` : ''}
+                            </div>
+                        `);
+                    }
                     break;
 
                 case 'shot_progress':
                     addMessage('received', `⏳ ${data.data}`);
                     break;
 
-                // ---------- ERRORS ----------
+                // ── TRACE ──
+                case 'trace_progress':
+                    addMessage('received', `⏳ ${data.data}`);
+                    break;
+
+                case 'trace_success':
+                    const trace = data.data;
+                    let traceHTML = `
+                        <div class="message received" style="width: 100%; max-width: 100%; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 16px;">
+                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 14px;">
+                                <span style="font-size: 24px;">🗺️</span>
+                                <div>
+                                    <strong style="color: #fff; font-size: 16px;">IP Geolocation</strong>
+                                    <div style="font-size: 12px; color: rgba(255,255,255,0.3);">${trace.query}</div>
+                                </div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px 20px; font-size: 13px; color: rgba(255,255,255,0.7);">
+                                <div><span style="color: rgba(255,255,255,0.3);">🌍 Country</span> ${trace.country} (${trace.countryCode})</div>
+                                <div><span style="color: rgba(255,255,255,0.3);">🏙️ Region</span> ${trace.region}</div>
+                                <div><span style="color: rgba(255,255,255,0.3);">📍 City</span> ${trace.city}</div>
+                                <div><span style="color: rgba(255,255,255,0.3);">📮 ZIP</span> ${trace.zip}</div>
+                                <div><span style="color: rgba(255,255,255,0.3);">🌐 Coordinates</span> ${trace.lat}, ${trace.lon}</div>
+                                <div><span style="color: rgba(255,255,255,0.3);">🕐 Timezone</span> ${trace.timezone}</div>
+                                <div style="grid-column: 1 / -1; border-top: 1px solid rgba(255,255,255,0.04); padding-top: 8px; margin-top: 4px;">
+                                    <span style="color: rgba(255,255,255,0.3);">📡 ISP</span> ${trace.isp}
+                                </div>
+                                <div style="grid-column: 1 / -1;">
+                                    <span style="color: rgba(255,255,255,0.3);">🏢 Organization</span> ${trace.org}
+                                </div>
+                                <div style="grid-column: 1 / -1;">
+                                    <span style="color: rgba(255,255,255,0.3);">🔗 AS</span> ${trace.as} ${trace.asname ? '- ' + trace.asname : ''}
+                                </div>
+                                <div style="grid-column: 1 / -1; border-top: 1px solid rgba(255,255,255,0.04); padding-top: 8px; margin-top: 4px; display: flex; gap: 16px; font-size: 12px;">
+                                    <span>📱 Mobile: ${trace.mobile}</span>
+                                    <span>🔒 Proxy/VPN: ${trace.proxy}</span>
+                                    <span>☁️ Hosting: ${trace.hosting}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    document.getElementById('chatArea').innerHTML += traceHTML;
+                    break;
+
+                // ── ERRORS ──
                 case 'error':
                     addMessage('error', `❌ ${data.data}`);
                     break;
 
-                // ---------- TRIALS ----------
+                // ── TRIALS ──
                 case 'trial_expired':
                     const info = data.data;
                     let upgradeMsg = `⚠️ ${info.message}<br><br>`;
@@ -1143,7 +1598,12 @@
             const input = document.getElementById('commandInput');
             const command = input.value.trim();
 
-            if (!command || !ws || ws.readyState !== WebSocket.OPEN) return;
+            if (!command || !ws || ws.readyState !== WebSocket.OPEN) {
+                if (!ws || ws.readyState !== WebSocket.OPEN) {
+                    addMessage('error', '❌ Not connected to server. Please wait for reconnection.');
+                }
+                return;
+            }
 
             let cmd = command;
             let args = '';
@@ -1235,6 +1695,10 @@
         // LOGOUT
         // ============================================
         function logout() {
+            if (reconnectTimeout) {
+                clearTimeout(reconnectTimeout);
+                reconnectTimeout = null;
+            }
             if (ws) {
                 ws.close();
             }
@@ -1250,6 +1714,8 @@
             userId = null;
             token = null;
             isReading = false;
+            reconnectAttempts = 0;
+            updateStatus('offline', 'Disconnected');
         }
 
         // ============================================
@@ -1280,6 +1746,16 @@
                 window.speechSynthesis.getVoices();
             };
         }
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        document.getElementById('loginUsername').value = 'blessed';
+        document.getElementById('loginPassword').value = 'emmanuel';
+
+        console.log('🚀 Bot Web Service loaded');
+        console.log('💡 Login with: blessed / emmanuel');
+        console.log('📝 Or register a new account');
     </script>
 </body>
 </html>
