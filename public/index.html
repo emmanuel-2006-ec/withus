@@ -1,4 +1,3 @@
-<!-- public/index.html - Updated with authentication -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -50,7 +49,7 @@
             margin-bottom: 10px;
         }
 
-        #loginScreen p {
+        #loginScreen .subtitle {
             color: rgba(255,255,255,0.8);
             margin-bottom: 30px;
         }
@@ -70,7 +69,11 @@
             background: rgba(255,255,255,0.9);
         }
 
-        .login-form button {
+        .login-form input:focus {
+            outline: 2px solid #fff;
+        }
+
+        .login-form .btn-login {
             width: 100%;
             padding: 15px;
             background: #2ed573;
@@ -81,9 +84,28 @@
             font-weight: bold;
             cursor: pointer;
             transition: transform 0.2s;
+            margin-top: 10px;
         }
 
-        .login-form button:hover {
+        .login-form .btn-login:hover {
+            transform: scale(1.02);
+        }
+
+        .login-form .btn-register {
+            width: 100%;
+            padding: 15px;
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-top: 10px;
+        }
+
+        .login-form .btn-register:hover {
             transform: scale(1.02);
         }
 
@@ -96,6 +118,35 @@
             display: none;
         }
 
+        .login-info {
+            color: rgba(255,255,255,0.7);
+            font-size: 12px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .login-info strong {
+            color: rgba(255,255,255,0.9);
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 15px 0;
+            color: rgba(255,255,255,0.5);
+        }
+
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .divider span {
+            padding: 0 10px;
+            font-size: 12px;
+        }
+
         /* Main Chat UI */
         #mainUI {
             display: none;
@@ -106,27 +157,33 @@
         .header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 15px 20px;
+            padding: 12px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            flex-shrink: 0;
         }
 
         .header h1 {
-            font-size: 20px;
+            font-size: 18px;
         }
 
         .header-info {
             display: flex;
             align-items: center;
-            gap: 15px;
-            font-size: 12px;
+            gap: 10px;
+            font-size: 11px;
+            flex-wrap: wrap;
         }
 
         .header-info .user-badge {
             background: rgba(255,255,255,0.2);
-            padding: 5px 10px;
+            padding: 4px 10px;
             border-radius: 15px;
+            white-space: nowrap;
+            font-size: 11px;
         }
 
         .header-info .status-indicator {
@@ -134,7 +191,7 @@
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            margin-right: 5px;
+            margin-right: 4px;
         }
 
         .status-indicator.online {
@@ -145,19 +202,39 @@
             background: #ff4757;
         }
 
+        .logout-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 4px 12px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
         .chat-area {
             flex: 1;
-            padding: 20px;
+            padding: 15px 20px;
             overflow-y: auto;
             background: #f5f5f5;
         }
 
         .message {
-            margin-bottom: 15px;
-            padding: 12px 16px;
+            margin-bottom: 12px;
+            padding: 10px 14px;
             border-radius: 12px;
-            max-width: 80%;
+            max-width: 85%;
             word-wrap: break-word;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .message.received {
@@ -188,10 +265,11 @@
         }
 
         .message.weather, .message.news {
-            background: #f0f0f0;
-            border-left: 4px solid #667eea;
+            background: #f8f9fa;
             width: 100%;
             max-width: 100%;
+            padding: 15px;
+            border-radius: 12px;
         }
 
         .message.trial-info {
@@ -208,17 +286,193 @@
             max-width: 100%;
         }
 
+        .message.read-line {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            width: 100%;
+            max-width: 100%;
+            font-family: 'Courier New', monospace;
+            animation: highlightLine 0.5s;
+        }
+
+        @keyframes highlightLine {
+            from { background: #c8e6c9; transform: scale(0.98); }
+            to { background: #e8f5e9; transform: scale(1); }
+        }
+
+        .message.file-message {
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 15px;
+            width: 100%;
+            max-width: 100%;
+            padding: 15px;
+        }
+
+        .file-message video {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+
+        .file-message .file-info {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .file-message .download-btn {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 8px 20px;
+            background: #667eea;
+            color: white;
+            border-radius: 20px;
+            text-decoration: none;
+            font-size: 13px;
+        }
+
+        .file-message .download-btn:hover {
+            background: #5a67d8;
+        }
+
+        /* Weather specific styles */
+        .weather-day {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 10px;
+            margin-bottom: 8px;
+            background: white;
+            border-radius: 10px;
+            border: 1px solid #e0e0e0;
+            transition: transform 0.2s;
+        }
+        .weather-day:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        .weather-day .day-name {
+            min-width: 80px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .weather-day .day-name .date {
+            font-size: 11px;
+            font-weight: normal;
+            color: #888;
+        }
+        .weather-day .weather-icon {
+            flex: 0 0 50px;
+            text-align: center;
+        }
+        .weather-day .weather-icon img {
+            width: 50px;
+            height: 50px;
+        }
+        .weather-day .weather-info {
+            flex: 1;
+        }
+        .weather-day .weather-info .temp {
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .weather-day .weather-info .temp-range {
+            font-size: 12px;
+            font-weight: normal;
+            color: #888;
+        }
+        .weather-day .weather-info .desc {
+            font-size: 13px;
+            color: #444;
+        }
+        .weather-day .weather-details {
+            text-align: right;
+            font-size: 12px;
+            color: #666;
+        }
+        .weather-day .weather-details div {
+            margin: 2px 0;
+        }
+
+        /* News specific styles */
+        .news-article {
+            display: flex;
+            gap: 12px;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: white;
+            border-radius: 10px;
+            border: 1px solid #e0e0e0;
+            transition: transform 0.2s;
+        }
+        .news-article:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        .news-article.featured {
+            border-left: 4px solid #667eea;
+        }
+        .news-article .news-image {
+            flex: 0 0 120px;
+            height: 80px;
+            overflow: hidden;
+            border-radius: 8px;
+            background: #f0f0f0;
+        }
+        .news-article .news-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .news-article .news-content {
+            flex: 1;
+            min-width: 0;
+        }
+        .news-article .news-content .title {
+            font-weight: bold;
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 4px;
+        }
+        .news-article .news-content .description {
+            font-size: 13px;
+            color: #555;
+            margin-bottom: 6px;
+        }
+        .news-article .news-content .meta {
+            display: flex;
+            gap: 12px;
+            font-size: 11px;
+            color: #888;
+            flex-wrap: wrap;
+        }
+        .news-article .news-content .read-link {
+            display: inline-block;
+            margin-top: 6px;
+            font-size: 12px;
+            color: #667eea;
+            text-decoration: none;
+        }
+        .news-article .news-content .read-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Input area */
         .input-area {
-            padding: 20px;
+            padding: 12px 20px;
             background: white;
             border-top: 1px solid #e0e0e0;
             display: flex;
             gap: 10px;
+            flex-shrink: 0;
         }
 
         .input-area input {
             flex: 1;
-            padding: 12px 16px;
+            padding: 10px 16px;
             border: 2px solid #e0e0e0;
             border-radius: 25px;
             font-size: 14px;
@@ -231,7 +485,7 @@
         }
 
         .input-area button {
-            padding: 12px 24px;
+            padding: 10px 24px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
@@ -239,53 +493,103 @@
             font-size: 14px;
             cursor: pointer;
             transition: transform 0.2s;
+            white-space: nowrap;
         }
 
         .input-area button:hover {
             transform: scale(1.05);
         }
 
+        /* File upload area */
         .file-upload-area {
             padding: 10px 20px;
             background: #f8f8f8;
             border-top: 1px solid #e0e0e0;
             display: none;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
         }
 
         .file-upload-area.active {
-            display: block;
+            display: flex;
         }
 
         .file-upload-area input[type="file"] {
-            margin-right: 10px;
+            flex: 1;
+            min-width: 150px;
+            padding: 6px;
         }
 
         .file-upload-area button {
-            padding: 8px 16px;
+            padding: 6px 16px;
             background: #2ed573;
             color: white;
             border: none;
             border-radius: 15px;
             cursor: pointer;
-            margin-right: 10px;
+            font-size: 13px;
+            white-space: nowrap;
         }
 
         .file-upload-area button.stop-read {
             background: #ff4757;
         }
 
-        .logout-btn {
-            background: rgba(255,255,255,0.2);
-            color: white;
-            border: 1px solid rgba(255,255,255,0.3);
-            padding: 5px 15px;
-            border-radius: 15px;
-            cursor: pointer;
+        .file-upload-area .file-info {
+            color: #666;
             font-size: 12px;
+            white-space: nowrap;
         }
 
-        .logout-btn:hover {
-            background: rgba(255,255,255,0.3);
+        /* Reading progress */
+        .reading-progress {
+            padding: 8px 20px;
+            background: #e8f5e9;
+            border-top: 1px solid #4caf50;
+            display: none;
+            font-size: 13px;
+            color: #2e7d32;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            flex-shrink: 0;
+        }
+
+        .reading-progress.active {
+            display: flex;
+        }
+
+        .reading-progress .progress-bar {
+            flex: 1;
+            min-width: 80px;
+            height: 6px;
+            background: #c8e6c9;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .reading-progress .progress-bar .progress-fill {
+            height: 100%;
+            background: #4caf50;
+            border-radius: 3px;
+            transition: width 0.3s;
+            width: 0%;
+        }
+
+        .reading-progress .stop-speech-btn {
+            padding: 3px 12px;
+            background: #ff4757;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        .reading-progress .stop-speech-btn:hover {
+            background: #ff6b81;
         }
 
         @media (max-width: 600px) {
@@ -300,7 +604,44 @@
             }
 
             .header h1 {
-                font-size: 16px;
+                font-size: 15px;
+            }
+
+            .header-info {
+                font-size: 10px;
+            }
+
+            .weather-day {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            .weather-day .day-name {
+                min-width: 60px;
+            }
+            .weather-day .weather-details {
+                text-align: left;
+                width: 100%;
+            }
+
+            .news-article {
+                flex-direction: column;
+            }
+            .news-article .news-image {
+                flex: 0 0 150px;
+                width: 100%;
+                height: 150px;
+            }
+
+            .file-upload-area {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .file-upload-area input[type="file"] {
+                width: 100%;
+            }
+
+            .reading-progress {
+                font-size: 11px;
             }
         }
     </style>
@@ -310,15 +651,18 @@
         <!-- Login Screen -->
         <div id="loginScreen">
             <h1>🤖 Bot Service</h1>
-            <p>Login to access all features</p>
+            <p class="subtitle">Login or Create Account</p>
             <div class="login-form">
-                <div class="login-error" id="loginError">Invalid username or password</div>
-                <input type="text" id="loginUsername" placeholder="Username" value="blessed">
-                <input type="password" id="loginPassword" placeholder="Password" value="emmanuel">
-                <button onclick="login()">Login</button>
-                <p style="color: rgba(255,255,255,0.6); margin-top: 15px; font-size: 12px;">
-                    Default admin: blessed / emmanuel
-                </p>
+                <div class="login-error" id="loginError"></div>
+                <input type="text" id="loginUsername" placeholder="Choose a username" value="">
+                <input type="password" id="loginPassword" placeholder="Choose a password" value="">
+                <button class="btn-login" onclick="login(false)">🔑 Login</button>
+                <div class="divider"><span>OR</span></div>
+                <button class="btn-register" onclick="login(true)">📝 Register New Account</button>
+                <div class="login-info">
+                    <p>👑 <strong>Admin:</strong> blessed / emmanuel</p>
+                    <p>✨ New users get <strong>5 free trials</strong></p>
+                </div>
             </div>
         </div>
 
@@ -342,10 +686,21 @@
                 </div>
             </div>
 
+            <div class="reading-progress" id="readingProgress">
+                <span>📖 Reading:</span>
+                <span id="readingStatus">Loading...</span>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <span id="progressPercent">0%</span>
+                <button class="stop-speech-btn" onclick="stopReading()">⏹️ Stop</button>
+            </div>
+
             <div class="file-upload-area" id="fileUploadArea">
-                <input type="file" id="fileInput" accept=".txt,.doc,.docx,.pdf">
-                <button onclick="uploadFile()">📤 Upload & Start Reading</button>
+                <input type="file" id="fileInput" accept=".txt,.pdf,.doc,.docx">
+                <button onclick="uploadFile()">📤 Upload & Read Aloud</button>
                 <button class="stop-read" onclick="stopReading()">⏹️ Stop Reading</button>
+                <span class="file-info" id="fileInfo">No file selected</span>
             </div>
 
             <div class="input-area">
@@ -360,8 +715,12 @@
         let currentUser = null;
         let userId = null;
         let token = null;
+        let isReading = false;
 
-        function login() {
+        // ============================================
+        // AUTHENTICATION
+        // ============================================
+        function login(isNewUser) {
             const username = document.getElementById('loginUsername').value.trim();
             const password = document.getElementById('loginPassword').value.trim();
             const errorDiv = document.getElementById('loginError');
@@ -374,18 +733,17 @@
 
             errorDiv.style.display = 'none';
 
-            // Connect WebSocket and authenticate
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const wsUrl = `${protocol}//${window.location.host}`;
 
             ws = new WebSocket(wsUrl);
 
             ws.onopen = () => {
-                // Send authentication
                 ws.send(JSON.stringify({
                     type: 'auth',
                     username: username,
-                    password: password
+                    password: password,
+                    isNewUser: isNewUser
                 }));
             };
 
@@ -396,6 +754,8 @@
 
             ws.onclose = () => {
                 console.log('WebSocket disconnected');
+                document.getElementById('statusIndicator').className = 'status-indicator offline';
+                document.getElementById('statusText').textContent = 'Disconnected';
             };
 
             ws.onerror = (error) => {
@@ -410,25 +770,19 @@
                 userId = data.data.userId;
                 token = data.data.token;
 
-                // Switch to main UI
                 document.getElementById('loginScreen').style.display = 'none';
                 document.getElementById('mainUI').style.display = 'flex';
 
-                // Update user badge
                 const role = currentUser.role === 'admin' ? '👑 Admin' : '👤 User';
-                document.getElementById('userBadge').textContent = `${role}: ${currentUser.username} (${currentUser.userId})`;
+                const trialInfo = currentUser.role !== 'admin' ? 
+                    ` | ${currentUser.trials.used}/${currentUser.trials.total} trials` : '';
+                document.getElementById('userBadge').textContent = 
+                    `${role}: ${currentUser.username} (${currentUser.userId})${trialInfo}`;
 
-                // Show trial info
-                if (currentUser.role !== 'admin') {
-                    const trials = currentUser.trials;
-                    const remaining = trials.total - trials.used;
-                    const isPremium = trials.expiry ? new Date(trials.expiry) > new Date() : false;
-                    
-                    let statusMsg = isPremium ? '✅ Premium User' : `🆓 ${remaining} free trials left`;
-                    document.getElementById('userBadge').textContent += ` | ${statusMsg}`;
+                if (data.data.isNewUser) {
+                    addMessage('system', '🎉 Account created successfully! You have 5 free trials.');
                 }
 
-                // Set up message handler
                 ws.onmessage = (event) => {
                     const msg = JSON.parse(event.data);
                     handleMessage(msg);
@@ -437,7 +791,6 @@
                 document.getElementById('statusIndicator').className = 'status-indicator online';
                 document.getElementById('statusText').textContent = 'Connected';
 
-                // Add welcome message
                 addMessage('system', `✅ Logged in as ${currentUser.username} (${currentUser.userId})`);
                 if (currentUser.role === 'admin') {
                     addMessage('system', '👑 You are logged in as Admin');
@@ -449,36 +802,202 @@
             }
         }
 
+        // ============================================
+        // TEXT-TO-SPEECH
+        // ============================================
+        function speakText(text) {
+            if (!('speechSynthesis' in window)) {
+                console.warn('Speech synthesis not supported');
+                return;
+            }
+            
+            window.speechSynthesis.cancel();
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US';
+            utterance.rate = 0.85;
+            utterance.pitch = 1;
+            utterance.volume = 1;
+            
+            const voices = window.speechSynthesis.getVoices();
+            const preferredVoice = voices.find(v => 
+                v.lang.startsWith('en') && 
+                (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Samantha'))
+            );
+            if (preferredVoice) {
+                utterance.voice = preferredVoice;
+            }
+            
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // ============================================
+        // MESSAGE HANDLING
+        // ============================================
         function handleMessage(data) {
+            console.log('Received message:', data.type);
+
             switch(data.type) {
+                // ---------- WEATHER ----------
                 case 'weather':
-                    let weatherHTML = '<div class="message weather"><strong>🌤️ Weather Forecast</strong><br><br>';
-                    weatherHTML += `<strong>City:</strong> ${data.data.city}<br><br>`;
-                    data.data.forecast.forEach(day => {
-                        weatherHTML += `📅 ${day.date}: ${day.temp}°C, ${day.description}, Humidity: ${day.humidity}%<br>`;
+                    const weatherData = data.data;
+                    let weatherHTML = `
+                        <div class="message weather">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                                <span style="font-size: 28px;">🌤️</span>
+                                <div>
+                                    <strong style="font-size: 18px;">Weather Forecast</strong>
+                                    <div style="font-size: 14px; color: #666;">
+                                        ${weatherData.city}${weatherData.country ? ', ' + weatherData.country : ''}
+                                    </div>
+                                </div>
+                            </div>
+                    `;
+                    
+                    weatherData.forecast.forEach(day => {
+                        const date = new Date(day.date);
+                        const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+                        const monthDay = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                        const iconUrl = `https://openweathermap.org/img/wn/${day.icon || '01d'}@2x.png`;
+                        
+                        weatherHTML += `
+                            <div class="weather-day">
+                                <div class="day-name">
+                                    <div>${dayName}</div>
+                                    <div class="date">${monthDay}</div>
+                                </div>
+                                <div class="weather-icon">
+                                    <img src="${iconUrl}" alt="${day.description}">
+                                </div>
+                                <div class="weather-info">
+                                    <div class="temp">
+                                        ${Math.round(day.temp_avg)}°C
+                                        <span class="temp-range">
+                                            (${Math.round(day.temp_min)}°C - ${Math.round(day.temp_max)}°C)
+                                        </span>
+                                    </div>
+                                    <div class="desc">${day.description}</div>
+                                </div>
+                                <div class="weather-details">
+                                    <div>💧 ${day.humidity}%</div>
+                                    <div>💨 ${day.windSpeed || 0} km/h</div>
+                                    <div>🌡️ Feels ${Math.round(day.feelsLike || day.temp_avg)}°C</div>
+                                </div>
+                            </div>
+                        `;
                     });
+                    
+                    if (data.data.note) {
+                        weatherHTML += `<div style="margin-top: 10px; font-size: 12px; color: #ff6b6b;">${data.data.note}</div>`;
+                    }
                     weatherHTML += '</div>';
                     document.getElementById('chatArea').innerHTML += weatherHTML;
                     break;
 
+                // ---------- NEWS ----------
                 case 'news':
-                    let newsHTML = '<div class="message news"><strong>📰 News</strong><br><br>';
-                    data.data.articles.forEach(article => {
-                        newsHTML += `📌 <strong>${article.title}</strong><br>`;
-                        newsHTML += `${article.description}<br>`;
-                        newsHTML += `<small>Source: ${article.source}</small><br><br>`;
+                    const newsData = data.data;
+                    let newsHTML = `
+                        <div class="message news">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                                <span style="font-size: 28px;">📰</span>
+                                <div>
+                                    <strong style="font-size: 18px;">${newsData.category === 'malawi' ? '🇲🇼 Malawi' : '🌍 Global'} News</strong>
+                                    <div style="font-size: 12px; color: #666;">${newsData.total || 0} articles found</div>
+                                </div>
+                            </div>
+                    `;
+                    
+                    newsData.articles.forEach((article, index) => {
+                        const desc = article.description && article.description.length > 200 
+                            ? article.description.substring(0, 200) + '...' 
+                            : article.description || 'No description available';
+                        
+                        newsHTML += `
+                            <div class="news-article ${index === 0 ? 'featured' : ''}">
+                                ${article.image ? `
+                                    <div class="news-image">
+                                        <img src="${article.image}" alt="${article.title}">
+                                    </div>
+                                ` : ''}
+                                <div class="news-content">
+                                    <div class="title">${article.title}</div>
+                                    <div class="description">${desc}</div>
+                                    <div class="meta">
+                                        <span>📌 ${article.source}</span>
+                                        ${article.author && article.author !== 'Unknown' ? `<span>✍️ ${article.author}</span>` : ''}
+                                        <span>📅 ${article.publishedAt}</span>
+                                    </div>
+                                    <a href="${article.url}" target="_blank" class="read-link">🔗 Read full article →</a>
+                                </div>
+                            </div>
+                        `;
                     });
+                    
+                    if (data.data.note) {
+                        newsHTML += `<div style="margin-top: 10px; font-size: 12px; color: #ff6b6b;">${data.data.note}</div>`;
+                    }
                     newsHTML += '</div>';
                     document.getElementById('chatArea').innerHTML += newsHTML;
                     break;
 
+                // ---------- READ ----------
                 case 'read_prompt':
                     document.getElementById('fileUploadArea').classList.add('active');
-                    addMessage('system', '📄 Please upload a document to read');
+                    document.getElementById('fileInfo').textContent = 'Ready for upload';
+                    addMessage('system', '📄 Please upload a document to read aloud');
                     break;
 
+                case 'read_line':
+                    const lineContent = data.data.content;
+                    const lineNum = data.data.lineNumber;
+                    const totalLines = data.data.totalLines;
+                    
+                    addMessage('read-line', `📖 Line ${lineNum}/${totalLines}: ${lineContent}`);
+                    
+                    const progress = (lineNum / totalLines) * 100;
+                    document.getElementById('readingStatus').textContent = `Line ${lineNum}/${totalLines}`;
+                    document.getElementById('progressFill').style.width = progress + '%';
+                    document.getElementById('progressPercent').textContent = Math.round(progress) + '%';
+                    document.getElementById('readingProgress').classList.add('active');
+                    
+                    if (lineContent && lineContent.trim()) {
+                        speakText(lineContent);
+                    }
+                    break;
+
+                case 'read_complete':
+                    addMessage('system', '✅ Finished reading the entire document');
+                    document.getElementById('readingProgress').classList.remove('active');
+                    document.getElementById('fileUploadArea').classList.remove('active');
+                    isReading = false;
+                    if ('speechSynthesis' in window) {
+                        window.speechSynthesis.cancel();
+                    }
+                    break;
+
+                // ---------- PUBLIC MESSAGES ----------
                 case 'public':
-                    addMessage('received', data.data);
+                    if (data.data.type === 'file') {
+                        addMessage('received', `
+                            <div class="file-message">
+                                <strong>📹 ${data.data.message}</strong><br>
+                                <video controls style="max-width: 100%; max-height: 400px; border-radius: 10px; margin-top: 10px;">
+                                    <source src="${data.data.file.url}" type="video/mp4">
+                                    Your browser does not support the video tag.
+                                </video>
+                                <div class="file-info">
+                                    📁 ${data.data.file.name} (${data.data.file.size}) 
+                                    ${data.data.file.quality ? `| Quality: ${data.data.file.quality}` : ''}
+                                </div>
+                                <a href="${data.data.file.url}" download="${data.data.file.name}" class="download-btn">
+                                    ⬇️ Download Video
+                                </a>
+                            </div>
+                        `);
+                    } else {
+                        addMessage('received', data.data.message);
+                    }
                     break;
 
                 case 'confirm':
@@ -508,12 +1027,24 @@
                     `);
                     break;
 
+                // ---------- SHOT ----------
                 case 'shot_success':
                     addMessage('received', `
-                        <strong>📹 Facebook Video</strong><br><br>
-                        ${data.data.message}<br>
-                        Video ID: ${data.data.videoId}<br>
-                        Status: ${data.data.status}
+                        <div class="file-message">
+                            <strong>📹 ${data.data.message}</strong><br>
+                            <video controls style="max-width: 100%; max-height: 400px; border-radius: 10px; margin-top: 10px;">
+                                <source src="${data.data.videoUrl}" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                            <div class="file-info">
+                                📁 ${data.data.filename} (${data.data.size}) 
+                                ${data.data.quality ? `| Quality: ${data.data.quality}` : ''}
+                            </div>
+                            <a href="${data.data.videoUrl}" download="${data.data.filename}" class="download-btn">
+                                ⬇️ Download Video
+                            </a>
+                            ${data.data.note ? `<div style="margin-top: 8px; font-size: 12px; color: #888;">${data.data.note}</div>` : ''}
+                        </div>
                     `);
                     break;
 
@@ -521,10 +1052,12 @@
                     addMessage('received', `⏳ ${data.data}`);
                     break;
 
+                // ---------- ERRORS ----------
                 case 'error':
                     addMessage('error', `❌ ${data.data}`);
                     break;
 
+                // ---------- TRIALS ----------
                 case 'trial_expired':
                     const info = data.data;
                     let upgradeMsg = `⚠️ ${info.message}<br><br>`;
@@ -550,6 +1083,9 @@
                         const expiryDate = new Date(user.trials.expiry);
                         const daysLeft = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
                         idMsg += `Premium Expiry: ${new Date(user.trials.expiry).toLocaleDateString()} (${daysLeft} days left)`;
+                    } else {
+                        const remaining = user.trials.total - user.trials.used;
+                        idMsg += `Remaining Trials: ${remaining}`;
                     }
                     addMessage('received', idMsg);
                     break;
@@ -560,7 +1096,7 @@
 
                 case 'upgrade_success':
                     addMessage('system', `
-                        ✅ User ${data.data.userId} (${data.data.username}) upgraded to premium for ${data.data.days} days!
+                        ✅ User ${data.data.userId} (${data.data.username}) upgraded to premium for ${data.data.days} days!<br>
                         Expiry: ${new Date(data.data.expiry).toLocaleDateString()}
                     `);
                     break;
@@ -570,11 +1106,10 @@
                     break;
 
                 case 'user_login':
-                    addMessage('system', `👤 User ${data.data.userId} (${data.data.username}) logged in at ${new Date(data.data.time).toLocaleTimeString()}`);
+                    addMessage('system', `👤 User ${data.data.userId} (${data.data.username}) logged in${data.data.isNew ? ' (NEW)' : ''} at ${new Date(data.data.time).toLocaleTimeString()}`);
                     break;
 
                 case 'history':
-                    // Handle message history
                     break;
 
                 default:
@@ -584,62 +1119,48 @@
             document.getElementById('chatArea').scrollTop = document.getElementById('chatArea').scrollHeight;
         }
 
+        // ============================================
+        // UI HELPERS
+        // ============================================
         function addMessage(type, content) {
             const chatArea = document.getElementById('chatArea');
-            const messageClass = type === 'sent' ? 'sent' : 
-                               type === 'error' ? 'error' : 
-                               type === 'system' ? 'system' : 
-                               type === 'trial-info' ? 'trial-info' :
-                               type === 'upgrade-info' ? 'upgrade-info' :
-                               'received';
+            let messageClass = 'received';
+            if (type === 'sent') messageClass = 'sent';
+            else if (type === 'error') messageClass = 'error';
+            else if (type === 'system') messageClass = 'system';
+            else if (type === 'trial-info') messageClass = 'trial-info';
+            else if (type === 'upgrade-info') messageClass = 'upgrade-info';
+            else if (type === 'read-line') messageClass = 'read-line';
+            
             chatArea.innerHTML += `<div class="message ${messageClass}">${content}</div>`;
             chatArea.scrollTop = chatArea.scrollHeight;
         }
 
+        // ============================================
+        // COMMANDS
+        // ============================================
         function sendCommand() {
             const input = document.getElementById('commandInput');
             const command = input.value.trim();
 
             if (!command || !ws || ws.readyState !== WebSocket.OPEN) return;
 
-            // Check for commands that don't require WebSocket
-            if (command.startsWith('.read')) {
-                ws.send(JSON.stringify({ command: '.read', args: '' }));
-            } else if (command.startsWith('.me ')) {
-                const message = command.substring(4);
-                ws.send(JSON.stringify({ command: '.me', args: message }));
-            } else if (command.startsWith('.weather')) {
-                const city = command.substring(8).trim() || 'Lilongwe';
-                ws.send(JSON.stringify({ command: '.weather', args: city }));
-            } else if (command.startsWith('.news')) {
-                const category = command.substring(5).trim() || 'global';
-                ws.send(JSON.stringify({ command: '.news', args: category }));
-            } else if (command === '.assist') {
-                ws.send(JSON.stringify({ command: '.assist', args: '' }));
-            } else if (command === '.developer') {
-                ws.send(JSON.stringify({ command: '.developer', args: '' }));
-            } else if (command.startsWith('.tune ')) {
-                const text = command.substring(6);
-                ws.send(JSON.stringify({ command: '.tune', args: text }));
-            } else if (command.startsWith('.shot ')) {
-                const link = command.substring(6);
-                ws.send(JSON.stringify({ command: '.shot', args: link }));
-            } else if (command === '.myid') {
-                ws.send(JSON.stringify({ command: '.myid', args: '' }));
-            } else if (command === '.trials') {
-                ws.send(JSON.stringify({ command: '.trials', args: '' }));
-            } else if (command.startsWith('.upgrade ')) {
-                const params = command.substring(9);
-                ws.send(JSON.stringify({ command: '.upgrade', args: params }));
-            } else {
-                ws.send(JSON.stringify({ command: command, args: '' }));
+            let cmd = command;
+            let args = '';
+            const spaceIndex = command.indexOf(' ');
+            if (spaceIndex > 0) {
+                cmd = command.substring(0, spaceIndex);
+                args = command.substring(spaceIndex + 1).trim();
             }
 
-            // Display user's command in chat
+            ws.send(JSON.stringify({ command: cmd, args: args }));
             addMessage('sent', command);
             input.value = '';
         }
 
+        // ============================================
+        // READ COMMAND - FILE UPLOAD
+        // ============================================
         function uploadFile() {
             const fileInput = document.getElementById('fileInput');
             const file = fileInput.files[0];
@@ -648,6 +1169,8 @@
                 alert('Please select a file first');
                 return;
             }
+
+            document.getElementById('fileInfo').textContent = `📄 ${file.name}`;
 
             const formData = new FormData();
             formData.append('file', file);
@@ -658,7 +1181,8 @@
             })
             .then(response => response.json())
             .then(data => {
-                alert(data.message);
+                addMessage('system', `📄 ${data.message}`);
+                document.getElementById('readingStatus').textContent = `Starting...`;
                 startReading();
             })
             .catch(error => {
@@ -676,7 +1200,8 @@
             })
             .then(response => response.json())
             .then(data => {
-                alert(data.message);
+                addMessage('system', `📖 ${data.message}`);
+                isReading = true;
             })
             .catch(error => {
                 alert('Error starting read: ' + error.message);
@@ -693,14 +1218,22 @@
             })
             .then(response => response.json())
             .then(data => {
-                alert(data.message);
+                addMessage('system', `⏹️ ${data.message}`);
+                document.getElementById('readingProgress').classList.remove('active');
                 document.getElementById('fileUploadArea').classList.remove('active');
+                isReading = false;
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                }
             })
             .catch(error => {
                 alert('Error stopping read: ' + error.message);
             });
         }
 
+        // ============================================
+        // LOGOUT
+        // ============================================
         function logout() {
             if (ws) {
                 ws.close();
@@ -708,24 +1241,45 @@
             document.getElementById('loginScreen').style.display = 'flex';
             document.getElementById('mainUI').style.display = 'none';
             document.getElementById('chatArea').innerHTML = '';
+            document.getElementById('readingProgress').classList.remove('active');
+            document.getElementById('fileUploadArea').classList.remove('active');
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+            }
             currentUser = null;
             userId = null;
             token = null;
+            isReading = false;
         }
 
-        // Enter key to send command
+        // ============================================
+        // EVENT LISTENERS
+        // ============================================
         document.getElementById('commandInput').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 sendCommand();
             }
         });
 
-        // Enter key to login
         document.getElementById('loginPassword').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
-                login();
+                login(false);
             }
         });
+
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            if (this.files.length > 0) {
+                document.getElementById('fileInfo').textContent = `📄 ${this.files[0].name}`;
+            }
+        });
+
+        // Load voices for speech synthesis
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.getVoices();
+            window.speechSynthesis.onvoiceschanged = () => {
+                window.speechSynthesis.getVoices();
+            };
+        }
     </script>
 </body>
 </html>
