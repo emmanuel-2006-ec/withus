@@ -1,4 +1,4 @@
-// server.js - COMPLETE UPDATED FILE
+// server.js - COMPLETE WITH .TRACE COMMAND
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
@@ -9,7 +9,6 @@ const WebSocket = require('ws');
 const http = require('http');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const fbDownloader = require('fb-downloader');
 const { v4: uuidv4 } = require('uuid');
 require('dotenv').config();
 
@@ -180,10 +179,22 @@ function useTrial(userId) {
     return false;
 }
 
-// WebSocket connection handling
+// WebSocket connection handling with improved reconnection
 wss.on('connection', (ws, req) => {
     let userId = null;
     let authenticated = false;
+    let pingInterval = null;
+    
+    // Ping/pong to keep connection alive
+    pingInterval = setInterval(() => {
+        if (ws.readyState === WebSocket.OPEN) {
+            ws.ping();
+        }
+    }, 30000);
+    
+    ws.on('pong', () => {
+        // Connection is alive
+    });
     
     ws.on('message', async (message) => {
         try {
@@ -256,7 +267,7 @@ wss.on('connection', (ws, req) => {
                         { expiresIn: '24h' }
                     );
                     
-                    clients.set(userId, { ws, user: foundUser, token });
+                    clients.set(userId, { ws, user: foundUser, token, pingInterval });
                     
                     ws.send(JSON.stringify({
                         type: 'auth_success',
@@ -348,6 +359,9 @@ wss.on('connection', (ws, req) => {
     });
     
     ws.on('close', () => {
+        if (pingInterval) {
+            clearInterval(pingInterval);
+        }
         if (userId) {
             clients.delete(userId);
             console.log(`User ${userId} disconnected`);
@@ -385,6 +399,9 @@ async function handleCommand(command, args, ws, userId) {
         case '.shot':
             await handleShot(args, ws, userId);
             break;
+        case '.trace':
+            await handleTrace(args, ws);
+            break;
         case '.upgrade':
             await handleUpgrade(args, ws, userId);
             break;
@@ -417,7 +434,7 @@ function handleMyId(ws, userId) {
 }
 
 // ============================================
-// 🌤️ IMPROVED WEATHER HANDLER
+// 🌤️ WEATHER HANDLER
 // ============================================
 async function handleWeather(args, ws) {
     const city = args || 'Lilongwe';
@@ -565,7 +582,7 @@ function generateMockWeather(city) {
 }
 
 // ============================================
-// 📰 IMPROVED NEWS HANDLER
+// 📰 NEWS HANDLER
 // ============================================
 async function handleNews(args, ws) {
     const category = args || 'global';
@@ -611,7 +628,6 @@ async function handleNews(args, ws) {
         
         const response = await axios.get(url, { timeout: 10000 });
         
-        // Process articles with more details
         const articles = response.data.articles.slice(0, 8).map(article => ({
             title: article.title || 'No title',
             description: article.description || 'No description available',
@@ -735,7 +751,6 @@ function handleRead(ws) {
     }));
 }
 
-// File upload endpoint for .read command
 app.post('/upload', upload.single('file'), (req, res) => {
     if (!req.file) {
         return res.status(400).json({ error: 'No file uploaded' });
@@ -865,7 +880,8 @@ function handleAssist(ws, userId) {
         { command: '.assist', description: 'Display all commands and how to use' },
         { command: '.developer', description: 'Show developer information' },
         { command: '.tune [passage]', description: 'Rewrite AI-generated text in human form' },
-        { command: '.shot [fb link]', description: 'Download video from Facebook (Automatic download)' },
+        { command: '.shot [fb link]', description: 'Download video from Facebook via downloader links' },
+        { command: '.trace [ip/domain]', description: 'Trace IP address or domain location (leave empty for your own IP)' },
         { command: '.trials', description: 'Check your remaining free trials' }
     ];
     
@@ -947,7 +963,7 @@ function humanizeText(text) {
 }
 
 // ============================================
-// 🎬 IMPROVED .SHOT COMMAND - Multiple Download Methods
+// 🎬 .SHOT COMMAND - Provides Download Links
 // ============================================
 async function handleShot(args, ws, userId) {
     // Validate URL
@@ -970,19 +986,17 @@ async function handleShot(args, ws, userId) {
     
     ws.send(JSON.stringify({
         type: 'shot_progress',
-        data: '⏳ Fetching Facebook video... Please wait...'
+        data: '⏳ Processing Facebook video link...'
     }));
     
     try {
-        console.log(`📹 Attempting to download Facebook video: ${args}`);
-        
-        let videoUrl = null;
-        let videoTitle = 'Facebook Video';
-        let videoQuality = 'HD';
-        let errorMessages = [];
+        console.log(`📹 Processing Facebook video: ${args}`);
         
         // Extract video ID from various Facebook URL formats
         let videoId = null;
+        let videoUrl = args;
+        
+        // Try different patterns to extract video ID
         const patterns = [
             /\/videos\/(\d+)/,
             /\/watch\?v=(\d+)/,
@@ -995,205 +1009,137 @@ async function handleShot(args, ws, userId) {
             const match = args.match(pattern);
             if (match) {
                 videoId = match[1];
+                console.log(`✅ Extracted video ID: ${videoId}`);
                 break;
             }
         }
         
-        // If we got a video ID, try to construct a direct link
+        // If we have a video ID, create a proper watch URL
         if (videoId) {
-            console.log(`✅ Extracted video ID: ${videoId}`);
-            const watchUrl = `https://www.facebook.com/watch?v=${videoId}`;
-            
-            // METHOD 1: Try fb-downloader with watch URL
-            try {
-                console.log('Method 1: Trying fb-downloader with watch URL...');
-                const result = await fbDownloader(watchUrl);
-                
-                if (result && result.downloadUrl) {
-                    videoUrl = result.downloadUrl;
-                    videoTitle = result.title || 'Facebook Video';
-                    videoQuality = result.quality || 'HD';
-                    console.log('✅ fb-downloader succeeded');
-                } else if (result && result.urls && result.urls.length > 0) {
-                    const video = result.urls[0];
-                    videoUrl = video.url || video.downloadUrl;
-                    videoTitle = result.title || 'Facebook Video';
-                    videoQuality = video.quality || 'HD';
-                    console.log('✅ fb-downloader succeeded (alternative format)');
-                }
-            } catch (err) {
-                errorMessages.push(`fb-downloader: ${err.message}`);
-                console.log('❌ fb-downloader failed:', err.message);
-            }
+            videoUrl = `https://www.facebook.com/watch?v=${videoId}`;
         }
         
-        // METHOD 2: Try fb-downloader with original URL
-        if (!videoUrl) {
-            try {
-                console.log('Method 2: Trying fb-downloader with original URL...');
-                const result = await fbDownloader(args);
-                
-                if (result && result.downloadUrl) {
-                    videoUrl = result.downloadUrl;
-                    videoTitle = result.title || 'Facebook Video';
-                    videoQuality = result.quality || 'HD';
-                    console.log('✅ fb-downloader succeeded with original URL');
-                } else if (result && result.urls && result.urls.length > 0) {
-                    const video = result.urls[0];
-                    videoUrl = video.url || video.downloadUrl;
-                    videoTitle = result.title || 'Facebook Video';
-                    videoQuality = video.quality || 'HD';
-                    console.log('✅ fb-downloader succeeded (alternative format)');
-                }
-            } catch (err) {
-                errorMessages.push(`fb-downloader (original): ${err.message}`);
-                console.log('❌ fb-downloader with original URL failed:', err.message);
+        // Create download links using popular Facebook video downloader services
+        const downloadLinks = [
+            {
+                name: '🔗 Snapsave (Recommended)',
+                url: `https://snapsave.app/`,
+                instructions: `1. Go to snapsave.app\n2. Paste this URL: ${videoUrl}\n3. Click Download`
+            },
+            {
+                name: '🔗 FB Down',
+                url: `https://fbdown.net/`,
+                instructions: `1. Go to fbdown.net\n2. Paste this URL: ${videoUrl}\n3. Click Download`
+            },
+            {
+                name: '🔗 GetFvid',
+                url: `https://getfvid.com/`,
+                instructions: `1. Go to getfvid.com\n2. Paste this URL: ${videoUrl}\n3. Click Download`
+            },
+            {
+                name: '🔗 SaveFrom.net',
+                url: `https://en.savefrom.net/`,
+                instructions: `1. Go to savefrom.net\n2. Paste this URL: ${videoUrl}\n3. Click Download`
             }
-        }
+        ];
         
-        // METHOD 3: Try alternative method - direct page scraping
-        if (!videoUrl) {
-            try {
-                console.log('Method 3: Trying direct page scraping...');
-                const response = await axios.get(args, {
-                    headers: {
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-                    },
-                    timeout: 15000
-                });
-                
-                const html = response.data;
-                const videoPatterns = [
-                    /"playable_url":\s*"([^"]+)"/,
-                    /"src":"([^"]+\.mp4[^"]*)"/,
-                    /"video_url":"([^"]+)"/,
-                    /https:\/\/[^"'\s]+\.mp4[^"'\s]*/
-                ];
-                
-                for (const pattern of videoPatterns) {
-                    const match = html.match(pattern);
-                    if (match) {
-                        let foundUrl = match[1];
-                        foundUrl = foundUrl.replace(/\\/g, '');
-                        if (foundUrl.startsWith('http')) {
-                            videoUrl = foundUrl;
-                            console.log('✅ Found video URL in page source');
-                            break;
-                        }
-                    }
-                }
-            } catch (err) {
-                errorMessages.push(`Direct scraping: ${err.message}`);
-                console.log('❌ Direct scraping failed:', err.message);
-            }
-        }
-        
-        // If we found a video URL, download it
-        if (videoUrl) {
-            try {
-                const videoId2 = uuidv4();
-                const videoFilename = `video_${videoId2}.mp4`;
-                const videoPath = path.join(DOWNLOADS_PATH, videoFilename);
-                
-                ws.send(JSON.stringify({
-                    type: 'shot_progress',
-                    data: '⏳ Downloading video file... This may take a moment...'
-                }));
-                
-                const response = await axios({
-                    method: 'GET',
-                    url: videoUrl,
-                    responseType: 'stream',
-                    timeout: 60000,
-                    headers: {
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                    }
-                });
-                
-                const writer = fs.createWriteStream(videoPath);
-                response.data.pipe(writer);
-                
-                await new Promise((resolve, reject) => {
-                    writer.on('finish', resolve);
-                    writer.on('error', reject);
-                });
-                
-                const stats = fs.statSync(videoPath);
-                const fileSizeMB = (stats.size / (1024 * 1024)).toFixed(2);
-                
-                const fileMessage = {
-                    userId: userId,
-                    username: 'Bot',
-                    message: `📹 Facebook Video Downloaded`,
-                    timestamp: new Date().toISOString(),
-                    type: 'file',
-                    file: {
-                        name: videoTitle || 'Facebook Video.mp4',
-                        filename: videoFilename,
-                        size: stats.size,
-                        sizeMB: fileSizeMB,
-                        path: videoPath,
-                        url: `/downloads/${videoFilename}`,
-                        videoId: videoId2,
-                        quality: videoQuality || 'HD'
-                    }
-                };
-                
-                const messages = getMessages();
-                messages.push(fileMessage);
-                saveMessages(messages);
-                
-                ws.send(JSON.stringify({
-                    type: 'shot_success',
-                    data: {
-                        message: '✅ Video downloaded successfully!',
-                        videoUrl: `/downloads/${videoFilename}`,
-                        filename: videoTitle || 'Facebook Video.mp4',
-                        size: fileSizeMB + ' MB',
-                        quality: videoQuality || 'HD',
-                        fileId: videoId2,
-                        note: '📥 Video has been downloaded and is now available in your chat. Click to play or download.'
-                    }
-                }));
-                
-                broadcastMessage(null, {
-                    type: 'file',
-                    userId: userId,
-                    username: 'Bot',
-                    message: `📹 New video downloaded: ${videoTitle || 'Facebook Video'}`,
-                    file: {
-                        name: videoTitle || 'Facebook Video.mp4',
-                        url: `/downloads/${videoFilename}`,
-                        size: fileSizeMB + ' MB',
-                        quality: videoQuality || 'HD'
-                    },
-                    timestamp: new Date().toISOString()
-                });
-                
-                return;
-                
-            } catch (downloadError) {
-                console.error('Video download error:', downloadError);
-                ws.send(JSON.stringify({
-                    type: 'error',
-                    data: `❌ Error downloading video: ${downloadError.message}\n\n💡 The video URL was found but couldn't be downloaded. This might be due to network issues or the video being protected.`
-                }));
-                return;
-            }
-        }
-        
-        // If all methods failed
-        const errorSummary = errorMessages.join('\n');
+        // Send the response with clickable links
         ws.send(JSON.stringify({
-            type: 'error',
-            data: `❌ Could not download video.\n\nPossible reasons:\n1. The video might be private or restricted\n2. The link might be invalid\n3. Facebook may have blocked the download\n4. The video might be age-restricted\n\n💡 Try these alternatives:\n• Make sure the video is public\n• Try a different Facebook video link\n• Visit the link directly in your browser first\n\n🔧 Debug info:\n${errorSummary}`
+            type: 'shot_success',
+            data: {
+                message: '✅ Facebook video link processed!',
+                videoId: videoId || 'Unknown',
+                videoUrl: videoUrl,
+                downloadLinks: downloadLinks,
+                note: '📥 Click any link below to download the video:',
+                instruction: '💡 If the downloader doesn\'t work, try a different one from the list above.'
+            }
         }));
         
     } catch (error) {
-        console.error('Facebook download error:', error);
+        console.error('Facebook processing error:', error);
         ws.send(JSON.stringify({
             type: 'error',
-            data: `❌ Download failed: ${error.message}\n\n💡 Tips:\n1. Make sure the video is public\n2. Try a different Facebook video link\n3. The video might be protected or removed`
+            data: `❌ Error processing video: ${error.message}\n\n💡 Please try using a Facebook video downloader website directly:\n• https://snapsave.app\n• https://fbdown.net\n• https://getfvid.com\n\n📌 Your video URL: ${args}`
+        }));
+    }
+}
+
+// ============================================
+// 🗺️ .TRACE COMMAND - IP Geolocation
+// ============================================
+async function handleTrace(args, ws) {
+    // If no argument given, the API will detect the caller's IP
+    let query = args ? args.trim() : '';
+
+    ws.send(JSON.stringify({
+        type: 'trace_progress',
+        data: query ? `⏳ Tracing IP: ${query}...` : '⏳ Tracing your current IP address...'
+    }));
+
+    try {
+        // Build the API URL
+        let apiUrl = 'http://ip-api.com/json/';
+        if (query) {
+            // Basic validation for IP or domain
+            const isValid = /^([0-9]{1,3}\.){3}[0-9]{1,3}$/.test(query) || /^([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/.test(query);
+            if (!isValid) {
+                ws.send(JSON.stringify({
+                    type: 'error',
+                    data: '❌ Invalid IP address or domain name. Please provide a valid IPv4 address or domain.'
+                }));
+                return;
+            }
+            apiUrl += encodeURIComponent(query);
+        }
+        // If query is empty, the API will use the requestor's IP
+
+        // Request extra fields and set language to English
+        apiUrl += '?fields=status,message,query,country,countryCode,region,regionName,city,zip,lat,lon,timezone,isp,org,as,asname,mobile,proxy,hosting';
+
+        console.log(`🗺️ Tracing: ${query || 'Current IP'}`);
+        const response = await axios.get(apiUrl, { timeout: 10000 });
+
+        const data = response.data;
+
+        if (data.status === 'fail') {
+            ws.send(JSON.stringify({
+                type: 'error',
+                data: `❌ Trace failed: ${data.message || 'Unknown error'}`
+            }));
+            return;
+        }
+
+        // Build result object
+        const result = {
+            query: data.query || query || 'Unknown',
+            country: data.country || 'N/A',
+            countryCode: data.countryCode || 'N/A',
+            region: data.regionName || data.region || 'N/A',
+            city: data.city || 'N/A',
+            zip: data.zip || 'N/A',
+            lat: data.lat || 'N/A',
+            lon: data.lon || 'N/A',
+            timezone: data.timezone || 'N/A',
+            isp: data.isp || 'N/A',
+            org: data.org || 'N/A',
+            as: data.as || 'N/A',
+            asname: data.asname || 'N/A',
+            mobile: data.mobile !== undefined ? (data.mobile ? 'Yes' : 'No') : 'N/A',
+            proxy: data.proxy !== undefined ? (data.proxy ? 'Yes' : 'No') : 'N/A',
+            hosting: data.hosting !== undefined ? (data.hosting ? 'Yes' : 'No') : 'N/A'
+        };
+
+        ws.send(JSON.stringify({
+            type: 'trace_success',
+            data: result
+        }));
+
+    } catch (error) {
+        console.error('Trace API Error:', error.message);
+        ws.send(JSON.stringify({
+            type: 'error',
+            data: `❌ Trace failed: ${error.message}`
         }));
     }
 }
@@ -1395,6 +1341,7 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ WebSocket server running on ws://localhost:${PORT}`);
     console.log(`✅ Health check: http://localhost:${PORT}/health`);
     console.log(`✅ Debug env: http://localhost:${PORT}/debug-env`);
-    console.log(`✅ Facebook video downloader is ready!`);
+    console.log(`✅ Facebook video downloader links ready!`);
+    console.log(`✅ IP Geolocation (.trace) ready!`);
     console.log(`✅ Videos will be saved to: ${DOWNLOADS_PATH}\n`);
 });
