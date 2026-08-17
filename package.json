@@ -1,7 +1,7 @@
 {
   "name": "bot-web-service",
   "version": "1.0.0",
-  "description": "Web service bot with authentication, trials, and payment system",
+  "description": "Web service bot with file sharing and video downloads",
   "main": "server.js",
   "engines": {
     "node": "18.x",
@@ -20,7 +20,9 @@
     "bcryptjs": "^2.4.3",
     "jsonwebtoken": "^9.0.2",
     "dotenv": "^16.3.1",
-    "fb-downloader": "^1.0.0"
+    "fb-downloader": "^1.0.0",
+    "ytdl-core": "^4.11.5",
+    "fluent-ffmpeg": "^2.1.2"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
