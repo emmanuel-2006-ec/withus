@@ -22,8 +22,8 @@
     "dotenv": "^16.3.1",
     "fb-downloader": "^1.0.0",
     "ytdl-core": "^4.11.5",
-    "fluent-ffmpeg": "^2.1.2"
-    "uuid": "^9.0.1"
+    "fluent-ffmpeg": "^2.1.2",
+    "uuid": "^9.0.1",
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
