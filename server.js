@@ -1,4 +1,4 @@
-// server.js - FINAL with .me broadcast fix & .system command
+// server.js - FINAL with RSS News
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
@@ -10,15 +10,22 @@ const http = require('http');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
+const Parser = require('rss-parser');
 require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
+// ---- RSS Parser ----
+const parser = new Parser({
+  timeout: 10000,
+  headers: { 'User-Agent': 'Mozilla/5.0' }
+});
+
 console.log('\n🔍 Environment Check:');
 console.log(`🌤️ WEATHER_API_KEY: ${process.env.WEATHER_API_KEY ? '✅ Set' : '❌ Missing'}`);
-console.log(`📰 NEWS_API_KEY: ${process.env.NEWS_API_KEY ? '✅ Set' : '❌ Missing'}`);
+console.log(`📰 NEWS: Using RSS feeds (no API key required)`);
 console.log(`🔑 JWT_SECRET: ${process.env.JWT_SECRET ? '✅ Set' : '❌ Missing'}`);
 console.log(`📁 DB_PATH: ${process.env.DB_PATH || '/tmp/data'}\n`);
 
@@ -344,7 +351,7 @@ function handleDeviceId(ws, userId) {
     }));
 }
 
-// ---- .weather ----
+// ---- .weather (unchanged) ----
 async function handleWeather(args, ws) {
     const city = args || 'Lilongwe';
     try {
@@ -427,37 +434,74 @@ function generateMockWeather(city) {
     });
 }
 
-// ---- .news ----
+// ---- .news (RSS version) ----
 async function handleNews(args, ws) {
     const category = args || 'global';
+    let feedUrl = '';
+    let feedName = '';
+
+    if (category === 'malawi') {
+        feedUrl = 'https://news.google.com/rss?hl=en-US&gl=MW&ceid=MW:en';
+        feedName = 'Malawi News (Google)';
+    } else {
+        feedUrl = 'https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en';
+        feedName = 'Global News (Google)';
+    }
+
+    ws.send(JSON.stringify({
+        type: 'news_progress',
+        data: `⏳ Fetching ${category} news from RSS...`
+    }));
+
     try {
-        let apiKey = process.env.NEWS_API_KEY;
-        if (!apiKey || apiKey === 'your_gnews_api_key_here') {
-            const mock = generateMockNews(category);
-            ws.send(JSON.stringify({ type: 'news', data: { category, articles: mock, note: '⚠️ Using sample data.' } }));
-            return;
+        console.log(`📰 Fetching RSS feed: ${feedUrl}`);
+        const feed = await parser.parseURL(feedUrl);
+
+        if (!feed.items || feed.items.length === 0) {
+            throw new Error('No items in feed');
         }
-        let url = `https://gnews.io/api/v4/top-headlines?token=${apiKey}&lang=en&max=10`;
-        if (category === 'malawi') url = `https://gnews.io/api/v4/search?q=malawi&token=${apiKey}&lang=en&max=10`;
-        const response = await axios.get(url, { timeout: 10000 });
-        const shuffled = response.data.articles.sort(() => Math.random() - 0.5);
+
+        // Shuffle and pick up to 8 articles
+        const shuffled = feed.items.sort(() => Math.random() - 0.5);
         const count = Math.min(4 + Math.floor(Math.random() * 5), shuffled.length);
         const selected = shuffled.slice(0, count);
-        const articles = selected.map(article => ({
-            title: article.title || 'No title',
-            description: article.description || 'No description available',
-            source: article.source?.name || 'Unknown source',
-            url: article.url || '#',
-            image: article.image || null,
-            publishedAt: article.publishedAt ? new Date(article.publishedAt).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) : 'Recent',
-            author: article.author || 'Unknown'
+
+        const articles = selected.map(item => ({
+            title: item.title || 'No title',
+            description: item.contentSnippet || item.content || 'No description',
+            source: item.source?.title || item.creator || 'News Source',
+            url: item.link || '#',
+            image: null, // Google RSS doesn't provide images
+            publishedAt: item.pubDate ? new Date(item.pubDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) : 'Recent',
+            author: item.author || 'Unknown'
         }));
-        ws.send(JSON.stringify({ type: 'news', data: { category, articles, total: articles.length } }));
+
+        ws.send(JSON.stringify({
+            type: 'news',
+            data: {
+                category: category,
+                articles: articles,
+                total: articles.length,
+                note: `📰 ${feedName} (RSS)`
+            }
+        }));
     } catch (error) {
+        console.error('RSS fetch error:', error.message);
+        // Fallback to mock data
         const mock = generateMockNews(category);
-        ws.send(JSON.stringify({ type: 'news', data: { category, articles: mock, note: `⚠️ API error: ${error.message}` } }));
+        ws.send(JSON.stringify({
+            type: 'news',
+            data: {
+                category,
+                articles: mock,
+                total: mock.length,
+                note: `⚠️ RSS feed failed (${error.message}). Using sample data.`
+            }
+        }));
     }
 }
+
+// ---- Mock news (fallback) ----
 function generateMockNews(category) {
     const globalPool = [
         { title: 'Global Economy Shows Strong Recovery Signs', description: 'World markets respond positively to economic indicators as GDP growth exceeds expectations in major economies.', source: 'World News Network', author: 'Financial Desk' },
@@ -487,7 +531,7 @@ function generateMockNews(category) {
     return selected.map(article => ({ ...article, image: null, publishedAt: today }));
 }
 
-// ---- .read ----
+// ---- .read (unchanged) ----
 function handleRead(ws) {
     ws.send(JSON.stringify({ type: 'read_prompt', data: '📄 Please upload a PDF or text document to read aloud' }));
 }
@@ -567,11 +611,7 @@ function handleMe(args, ws, userId) {
     const messages = getMessages();
     messages.push(publicMessage);
     saveMessages(messages);
-
-    // Broadcast to ALL connected clients (including sender)
     broadcastMessage(null, publicMessage);
-
-    // Optional: send a confirmation to the sender (already handled by broadcast)
     ws.send(JSON.stringify({ type: 'confirm', data: '✅ Message sent to everyone' }));
 }
 
@@ -593,7 +633,6 @@ async function handleSystem(args, ws, userId) {
         timestamp: new Date().toISOString(),
         sender: 'Admin'
     };
-    // Broadcast to all
     broadcastMessage(null, systemMessage);
     ws.send(JSON.stringify({ type: 'confirm', data: '✅ System message sent to all users.' }));
 }
@@ -604,7 +643,7 @@ function handleAssist(ws, userId) {
         { command: '.myid', description: 'Show your unique user ID and trial status' },
         { command: '.deviceid', description: 'Show your device identifier' },
         { command: '.weather [city]', description: 'Predict next 5 days weather (default: Lilongwe)' },
-        { command: '.news [global/malawi]', description: 'Show trending global or Malawi news' },
+        { command: '.news [global/malawi]', description: 'Show trending global or Malawi news (RSS)' },
         { command: '.read', description: 'Upload and read document aloud line by line' },
         { command: '.me [message]', description: 'Send public message to everyone logged in' },
         { command: '.assist', description: 'Display all commands and how to use' },
@@ -817,7 +856,7 @@ function handleTrials(ws, userId) {
     ws.send(JSON.stringify({ type: 'trials_info', data: msg }));
 }
 
-// ---- Broadcast (fixed) ----
+// ---- Broadcast ----
 function broadcastMessage(targetUserId, message) {
     const payload = JSON.stringify({ type: 'public', data: message });
     if (targetUserId) {
@@ -826,7 +865,6 @@ function broadcastMessage(targetUserId, message) {
             client.ws.send(payload);
         }
     } else {
-        // Send to ALL connected clients
         clients.forEach((client) => {
             if (client.ws.readyState === WebSocket.OPEN) {
                 client.ws.send(payload);
@@ -842,7 +880,6 @@ app.get('/health', (req, res) => res.status(200).json({ status: 'OK', timestamp:
 app.get('/debug-env', (req, res) => {
     const env = {
         WEATHER_API_KEY: process.env.WEATHER_API_KEY ? '✅ Set' : '❌ Missing',
-        NEWS_API_KEY: process.env.NEWS_API_KEY ? '✅ Set' : '❌ Missing',
         JWT_SECRET: process.env.JWT_SECRET ? '✅ Set' : '❌ Missing',
         DB_PATH: process.env.DB_PATH || 'Not set',
         NODE_ENV: process.env.NODE_ENV || 'Not set',
@@ -855,5 +892,5 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`\n✅ Bot server running on http://localhost:${PORT}`);
     console.log(`✅ WebSocket running on ws://localhost:${PORT}`);
-    console.log(`✅ Device-based registration blocking active!`);
+    console.log(`✅ RSS News active – no API key required!`);
 });
