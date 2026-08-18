@@ -5,15 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bot Web Service</title>
     <style>
-        /* ============================================
-           DARK TECH THEME WITH ANIMATIONS
-           ============================================ */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #0a0e17;
@@ -23,84 +15,56 @@
             align-items: center;
             overflow: hidden;
         }
-
         body::before {
             content: '';
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: 
-                radial-gradient(circle at 20% 50%, rgba(102, 126, 234, 0.08) 0%, transparent 50%),
-                radial-gradient(circle at 80% 80%, rgba(118, 75, 162, 0.08) 0%, transparent 50%),
-                radial-gradient(circle at 40% 20%, rgba(46, 213, 115, 0.04) 0%, transparent 50%);
+            top: 0; left: 0; right: 0; bottom: 0;
+            background:
+                radial-gradient(circle at 20% 50%, rgba(102,126,234,0.08) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(118,75,162,0.08) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(46,213,115,0.04) 0%, transparent 50%);
             z-index: 0;
             animation: backgroundPulse 10s ease-in-out infinite alternate;
         }
-
-        @keyframes backgroundPulse {
-            0% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
-
+        @keyframes backgroundPulse { 0% { opacity: 0.5; } 100% { opacity: 1; } }
         body::after {
             content: '';
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-image: 
-                linear-gradient(rgba(102, 126, 234, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(102, 126, 234, 0.03) 1px, transparent 1px);
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image:
+                linear-gradient(rgba(102,126,234,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(102,126,234,0.03) 1px, transparent 1px);
             background-size: 40px 40px;
             z-index: 0;
             pointer-events: none;
         }
-
         .container {
             position: relative;
             z-index: 1;
-            background: rgba(14, 20, 34, 0.92);
+            background: rgba(14,20,34,0.92);
             backdrop-filter: blur(20px);
-            border: 1px solid rgba(102, 126, 234, 0.15);
+            border: 1px solid rgba(102,126,234,0.15);
             border-radius: 24px;
-            box-shadow: 
-                0 25px 80px rgba(0, 0, 0, 0.8),
-                inset 0 1px 0 rgba(255, 255, 255, 0.05),
-                0 0 60px rgba(102, 126, 234, 0.05);
+            box-shadow: 0 25px 80px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.05), 0 0 60px rgba(102,126,234,0.05);
             width: 92%;
             max-width: 860px;
             height: 92vh;
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            animation: containerAppear 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            animation: containerAppear 0.8s cubic-bezier(0.16,1,0.3,1);
         }
-
-        @keyframes containerAppear {
-            from { opacity: 0; transform: scale(0.96) translateY(20px); }
-            to { opacity: 1; transform: scale(1) translateY(0); }
-        }
-
+        @keyframes containerAppear { from { opacity:0; transform:scale(0.96) translateY(20px); } to { opacity:1; transform:scale(1) translateY(0); } }
         .container::before {
             content: '';
             position: absolute;
-            top: -2px;
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
+            top: -2px; left: -2px; right: -2px; bottom: -2px;
             border-radius: 26px;
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.3), rgba(118, 75, 162, 0.1), rgba(46, 213, 115, 0.1));
+            background: linear-gradient(135deg, rgba(102,126,234,0.3), rgba(118,75,162,0.1), rgba(46,213,115,0.1));
             z-index: -1;
             animation: borderGlow 4s ease-in-out infinite alternate;
         }
-
-        @keyframes borderGlow {
-            0% { opacity: 0.3; }
-            100% { opacity: 0.8; }
-        }
+        @keyframes borderGlow { 0% { opacity: 0.3; } 100% { opacity: 0.8; } }
 
         /* Login Screen */
         #loginScreen {
@@ -112,79 +76,34 @@
             padding: 40px;
             position: relative;
         }
-
-        #loginScreen::before {
-            content: '✦';
-            position: absolute;
-            font-size: 120px;
-            color: rgba(102, 126, 234, 0.04);
-            top: -20px;
-            right: -20px;
-            transform: rotate(15deg);
-        }
-
         #loginScreen h1 {
-            color: #fff;
             font-size: 34px;
-            margin-bottom: 8px;
             font-weight: 700;
             letter-spacing: -0.5px;
             background: linear-gradient(135deg, #667eea, #764ba2);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            text-shadow: none;
-            position: relative;
         }
-
-        #loginScreen h1::after {
-            content: '⚡';
-            font-size: 24px;
-            -webkit-text-fill-color: initial;
-            margin-left: 8px;
-            animation: pulseGlow 2s ease-in-out infinite;
-        }
-
-        @keyframes pulseGlow {
-            0%, 100% { opacity: 0.4; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.1); }
-        }
-
         #loginScreen .subtitle {
-            color: rgba(255, 255, 255, 0.4);
+            color: rgba(255,255,255,0.4);
             margin-bottom: 30px;
             font-size: 14px;
             letter-spacing: 2px;
             text-transform: uppercase;
         }
-
-        .login-form {
-            width: 100%;
-            max-width: 400px;
-        }
-
+        .login-form { width: 100%; max-width: 400px; }
         .login-form input {
             width: 100%;
             padding: 14px 18px;
             margin-bottom: 14px;
-            border: 1px solid rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255,255,255,0.06);
             border-radius: 12px;
             font-size: 15px;
-            background: rgba(255, 255, 255, 0.04);
+            background: rgba(255,255,255,0.04);
             color: #e0e0e0;
-            transition: all 0.3s ease;
+            transition: 0.3s;
         }
-
-        .login-form input:focus {
-            outline: none;
-            border-color: rgba(102, 126, 234, 0.4);
-            background: rgba(255, 255, 255, 0.06);
-            box-shadow: 0 0 30px rgba(102, 126, 234, 0.05);
-        }
-
-        .login-form input::placeholder {
-            color: rgba(255, 255, 255, 0.2);
-        }
-
+        .login-form input:focus { outline: none; border-color: rgba(102,126,234,0.4); background: rgba(255,255,255,0.06); }
         .login-form .btn-login {
             width: 100%;
             padding: 14px;
@@ -195,104 +114,52 @@
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: 0.3s;
             margin-top: 6px;
-            position: relative;
-            overflow: hidden;
         }
-
-        .login-form .btn-login:hover {
-            transform: scale(1.02);
-            box-shadow: 0 8px 30px rgba(102, 126, 234, 0.3);
-        }
-
-        .login-form .btn-login::after {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-
-        .login-form .btn-login:hover::after {
-            opacity: 1;
-        }
-
+        .login-form .btn-login:hover { transform: scale(1.02); box-shadow: 0 8px 30px rgba(102,126,234,0.3); }
         .login-form .btn-register {
             width: 100%;
             padding: 14px;
-            background: rgba(255, 255, 255, 0.04);
-            color: rgba(255, 255, 255, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(255,255,255,0.04);
+            color: rgba(255,255,255,0.7);
+            border: 1px solid rgba(255,255,255,0.06);
             border-radius: 12px;
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: 0.3s;
             margin-top: 10px;
         }
-
-        .login-form .btn-register:hover {
-            background: rgba(255, 255, 255, 0.08);
-            border-color: rgba(255, 255, 255, 0.1);
-            transform: scale(1.02);
-        }
-
+        .login-form .btn-register:hover { background: rgba(255,255,255,0.08); transform: scale(1.02); }
         .login-error {
             color: #ff6b6b;
-            background: rgba(255, 107, 107, 0.08);
+            background: rgba(255,107,107,0.08);
             padding: 12px;
             border-radius: 10px;
             margin-bottom: 14px;
             display: none;
-            font-size: 14px;
-            border: 1px solid rgba(255, 107, 107, 0.1);
+            border: 1px solid rgba(255,107,107,0.1);
         }
-
         .login-info {
-            color: rgba(255, 255, 255, 0.25);
+            color: rgba(255,255,255,0.25);
             font-size: 12px;
             margin-top: 20px;
             text-align: center;
             line-height: 1.8;
         }
-
-        .login-info strong {
-            color: rgba(255, 255, 255, 0.4);
-        }
-
+        .login-info strong { color: rgba(255,255,255,0.4); }
         .divider {
             display: flex;
             align-items: center;
             margin: 16px 0;
-            color: rgba(255, 255, 255, 0.1);
+            color: rgba(255,255,255,0.1);
         }
-
-        .divider::before, .divider::after {
-            content: '';
-            flex: 1;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-        }
-
-        .divider span {
-            padding: 0 14px;
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
+        .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid rgba(255,255,255,0.04); }
+        .divider span { padding: 0 14px; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; }
 
         /* Main Chat UI */
-        #mainUI {
-            display: none;
-            flex-direction: column;
-            height: 100%;
-        }
-
-        /* Header */
+        #mainUI { display: none; flex-direction: column; height: 100%; }
         .header {
             padding: 12px 20px;
             display: flex;
@@ -301,19 +168,16 @@
             flex-wrap: wrap;
             gap: 8px;
             flex-shrink: 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            background: rgba(0,0,0,0.2);
         }
-
         .header h1 {
             font-size: 17px;
             font-weight: 600;
-            color: #fff;
             background: linear-gradient(135deg, #667eea, #764ba2);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-
         .header-info {
             display: flex;
             align-items: center;
@@ -321,17 +185,13 @@
             font-size: 11px;
             flex-wrap: wrap;
         }
-
         .header-info .user-badge {
-            background: rgba(102, 126, 234, 0.12);
+            background: rgba(102,126,234,0.12);
             padding: 4px 12px;
             border-radius: 20px;
-            white-space: nowrap;
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.7);
-            border: 1px solid rgba(102, 126, 234, 0.1);
+            color: rgba(255,255,255,0.7);
+            border: 1px solid rgba(102,126,234,0.1);
         }
-
         .header-info .status-indicator {
             display: inline-block;
             width: 7px;
@@ -340,71 +200,34 @@
             margin-right: 4px;
             animation: statusPulse 2s ease-in-out infinite;
         }
-
-        @keyframes statusPulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
-        }
-
-        .status-indicator.online {
-            background: #2ed573;
-            box-shadow: 0 0 10px rgba(46, 213, 115, 0.3);
-        }
-
-        .status-indicator.offline {
-            background: #ff4757;
-            box-shadow: 0 0 10px rgba(255, 71, 87, 0.3);
-            animation: none;
-        }
-
-        .status-indicator.connecting {
-            background: #ffa502;
-            box-shadow: 0 0 10px rgba(255, 165, 2, 0.3);
-            animation: statusPulse 0.8s ease-in-out infinite;
-        }
-
-        .header-info .status-text {
-            color: rgba(255, 255, 255, 0.4);
-        }
-
+        @keyframes statusPulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+        .status-indicator.online { background: #2ed573; box-shadow: 0 0 10px rgba(46,213,115,0.3); }
+        .status-indicator.offline { background: #ff4757; box-shadow: 0 0 10px rgba(255,71,87,0.3); animation: none; }
+        .status-indicator.connecting { background: #ffa502; box-shadow: 0 0 10px rgba(255,165,2,0.3); animation: statusPulse 0.8s ease-in-out infinite; }
+        .header-info .status-text { color: rgba(255,255,255,0.4); }
         .logout-btn {
-            background: rgba(255, 255, 255, 0.04);
-            color: rgba(255, 255, 255, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.04);
+            background: rgba(255,255,255,0.04);
+            color: rgba(255,255,255,0.4);
+            border: 1px solid rgba(255,255,255,0.04);
             padding: 4px 14px;
             border-radius: 20px;
             cursor: pointer;
             font-size: 11px;
-            transition: all 0.3s ease;
+            transition: 0.3s;
         }
-
-        .logout-btn:hover {
-            background: rgba(255, 255, 255, 0.08);
-            color: rgba(255, 255, 255, 0.7);
-        }
+        .logout-btn:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7); }
 
         /* Chat Area */
         .chat-area {
             flex: 1;
             padding: 16px 20px;
             overflow-y: auto;
-            background: rgba(0, 0, 0, 0.15);
+            background: rgba(0,0,0,0.15);
             scroll-behavior: smooth;
         }
-
-        .chat-area::-webkit-scrollbar {
-            width: 4px;
-        }
-
-        .chat-area::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.02);
-            border-radius: 2px;
-        }
-
-        .chat-area::-webkit-scrollbar-thumb {
-            background: rgba(102, 126, 234, 0.3);
-            border-radius: 2px;
-        }
+        .chat-area::-webkit-scrollbar { width: 4px; }
+        .chat-area::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); border-radius: 2px; }
+        .chat-area::-webkit-scrollbar-thumb { background: rgba(102,126,234,0.3); border-radius: 2px; }
 
         /* Messages */
         .message {
@@ -413,77 +236,77 @@
             border-radius: 12px;
             max-width: 82%;
             word-wrap: break-word;
-            animation: messageAppear 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            transition: all 0.2s ease;
+            animation: messageAppear 0.4s cubic-bezier(0.16,1,0.3,1);
         }
-
-        @keyframes messageAppear {
-            from { opacity: 0; transform: translateY(12px) scale(0.96); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-
+        @keyframes messageAppear { from { opacity:0; transform:translateY(12px) scale(0.96); } to { opacity:1; transform:translateY(0) scale(1); } }
         .message.received {
-            background: rgba(255, 255, 255, 0.04);
+            background: rgba(255,255,255,0.04);
             color: #d0d0d0;
             align-self: flex-start;
-            border: 1px solid rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255,255,255,0.04);
         }
-
-        .message.received:hover {
-            border-color: rgba(255, 255, 255, 0.06);
-        }
-
         .message.sent {
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.25), rgba(118, 75, 162, 0.25));
+            background: linear-gradient(135deg, rgba(102,126,234,0.25), rgba(118,75,162,0.25));
             color: #fff;
             align-self: flex-end;
             margin-left: auto;
-            border: 1px solid rgba(102, 126, 234, 0.1);
+            border: 1px solid rgba(102,126,234,0.1);
         }
-
         .message.error {
-            background: rgba(255, 71, 87, 0.1);
+            background: rgba(255,71,87,0.1);
             color: #ff6b6b;
-            border: 1px solid rgba(255, 71, 87, 0.1);
+            border: 1px solid rgba(255,71,87,0.1);
         }
-
         .message.system {
-            background: rgba(46, 213, 115, 0.06);
+            background: rgba(46,213,115,0.06);
             color: #2ed573;
             text-align: center;
             width: 100%;
             max-width: 100%;
-            border: 1px solid rgba(46, 213, 115, 0.06);
+            border: 1px solid rgba(46,213,115,0.06);
             font-size: 13px;
         }
-
+        .message.system-broadcast {
+            background: rgba(255, 165, 0, 0.12);
+            border-left: 4px solid #ffa502;
+            color: #ffa502;
+            width: 100%;
+            max-width: 100%;
+            text-align: center;
+            font-weight: bold;
+            border-radius: 8px;
+            padding: 12px 16px;
+        }
+        .message.system-broadcast .sender {
+            font-size: 11px;
+            color: rgba(255,165,2,0.5);
+            display: block;
+            margin-top: 4px;
+        }
         .message.weather, .message.news {
-            background: rgba(255, 255, 255, 0.02);
+            background: rgba(255,255,255,0.02);
             width: 100%;
             max-width: 100%;
             padding: 16px;
             border-radius: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255,255,255,0.04);
         }
-
         .message.trial-info {
-            background: rgba(255, 165, 2, 0.04);
+            background: rgba(255,165,2,0.04);
             border-left: 3px solid #ffa502;
             width: 100%;
             max-width: 100%;
             color: #ffa502;
         }
-
         .message.upgrade-info {
-            background: rgba(23, 162, 184, 0.04);
+            background: rgba(23,162,184,0.04);
             border-left: 3px solid #17a2b8;
             width: 100%;
             max-width: 100%;
             color: #17a2b8;
         }
-
         .message.read-line {
-            background: rgba(46, 213, 115, 0.04);
+            background: rgba(46,213,115,0.04);
             border-left: 3px solid #2ed573;
             width: 100%;
             max-width: 100%;
@@ -492,34 +315,22 @@
             color: #8bc34a;
             animation: highlightLine 0.5s ease;
         }
-
-        @keyframes highlightLine {
-            from { background: rgba(46, 213, 115, 0.1); transform: scale(0.98); }
-            to { background: rgba(46, 213, 115, 0.04); transform: scale(1); }
-        }
-
+        @keyframes highlightLine { from { background: rgba(46,213,115,0.1); transform: scale(0.98); } to { background: rgba(46,213,115,0.04); transform: scale(1); } }
         .message.file-message {
-            background: rgba(102, 126, 234, 0.04);
-            border: 1px solid rgba(102, 126, 234, 0.1);
+            background: rgba(102,126,234,0.04);
+            border: 1px solid rgba(102,126,234,0.1);
             border-radius: 16px;
             width: 100%;
             max-width: 100%;
             padding: 16px;
         }
-
         .file-message video {
             max-width: 100%;
             max-height: 400px;
             border-radius: 12px;
             margin-top: 10px;
         }
-
-        .file-message .file-info {
-            margin-top: 10px;
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.3);
-        }
-
+        .file-message .file-info { margin-top: 10px; font-size: 12px; color: rgba(255,255,255,0.3); }
         .file-message .download-btn {
             display: inline-block;
             margin-top: 10px;
@@ -529,172 +340,78 @@
             border-radius: 20px;
             text-decoration: none;
             font-size: 13px;
-            transition: all 0.3s ease;
+            transition: 0.3s;
         }
+        .file-message .download-btn:hover { transform: scale(1.05); box-shadow: 0 4px 20px rgba(102,126,234,0.3); }
 
-        .file-message .download-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
-        }
-
-        /* Weather Specific */
+        /* Weather */
         .weather-day {
             display: flex;
             align-items: center;
             gap: 15px;
             padding: 10px 14px;
             margin-bottom: 8px;
-            background: rgba(255, 255, 255, 0.02);
+            background: rgba(255,255,255,0.02);
             border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.03);
-            transition: all 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.03);
+            transition: 0.3s;
         }
-        .weather-day:hover {
-            background: rgba(255, 255, 255, 0.04);
-            transform: translateX(4px);
-        }
-        .weather-day .day-name {
-            min-width: 80px;
-            text-align: center;
-            font-weight: 600;
-            font-size: 14px;
-            color: #fff;
-        }
-        .weather-day .day-name .date {
-            font-size: 11px;
-            font-weight: normal;
-            color: rgba(255, 255, 255, 0.25);
-        }
-        .weather-day .weather-icon {
-            flex: 0 0 50px;
-            text-align: center;
-        }
-        .weather-day .weather-icon img {
-            width: 48px;
-            height: 48px;
-            filter: drop-shadow(0 0 10px rgba(102, 126, 234, 0.1));
-        }
-        .weather-day .weather-info {
-            flex: 1;
-        }
-        .weather-day .weather-info .temp {
-            font-size: 17px;
-            font-weight: 600;
-            color: #fff;
-        }
-        .weather-day .weather-info .temp-range {
-            font-size: 12px;
-            font-weight: normal;
-            color: rgba(255, 255, 255, 0.25);
-        }
-        .weather-day .weather-info .desc {
-            font-size: 13px;
-            color: rgba(255, 255, 255, 0.4);
-        }
-        .weather-day .weather-details {
-            text-align: right;
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.3);
-        }
-        .weather-day .weather-details div {
-            margin: 2px 0;
-        }
+        .weather-day:hover { background: rgba(255,255,255,0.04); transform: translateX(4px); }
+        .weather-day .day-name { min-width: 80px; text-align: center; font-weight: 600; font-size: 14px; color: #fff; }
+        .weather-day .day-name .date { font-size: 11px; font-weight: normal; color: rgba(255,255,255,0.25); }
+        .weather-day .weather-icon { flex: 0 0 50px; text-align: center; }
+        .weather-day .weather-icon img { width: 48px; height: 48px; filter: drop-shadow(0 0 10px rgba(102,126,234,0.1)); }
+        .weather-day .weather-info { flex: 1; }
+        .weather-day .weather-info .temp { font-size: 17px; font-weight: 600; color: #fff; }
+        .weather-day .weather-info .temp-range { font-size: 12px; font-weight: normal; color: rgba(255,255,255,0.25); }
+        .weather-day .weather-info .desc { font-size: 13px; color: rgba(255,255,255,0.4); }
+        .weather-day .weather-details { text-align: right; font-size: 12px; color: rgba(255,255,255,0.3); }
+        .weather-day .weather-details div { margin: 2px 0; }
 
-        /* News Specific */
+        /* News */
         .news-article {
             display: flex;
             gap: 14px;
             padding: 14px;
             margin-bottom: 10px;
-            background: rgba(255, 255, 255, 0.02);
+            background: rgba(255,255,255,0.02);
             border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.03);
-            transition: all 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.03);
+            transition: 0.3s;
         }
-        .news-article:hover {
-            background: rgba(255, 255, 255, 0.04);
-            transform: translateX(4px);
-        }
-        .news-article.featured {
-            border-left: 3px solid #667eea;
-        }
-        .news-article .news-image {
-            flex: 0 0 120px;
-            height: 80px;
-            overflow: hidden;
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.02);
-        }
-        .news-article .news-image img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .news-article .news-content {
-            flex: 1;
-            min-width: 0;
-        }
-        .news-article .news-content .title {
-            font-weight: 600;
-            font-size: 14px;
-            color: #fff;
-            margin-bottom: 4px;
-        }
-        .news-article .news-content .description {
-            font-size: 13px;
-            color: rgba(255, 255, 255, 0.4);
-            margin-bottom: 6px;
-        }
-        .news-article .news-content .meta {
-            display: flex;
-            gap: 12px;
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.2);
-            flex-wrap: wrap;
-        }
-        .news-article .news-content .read-link {
-            display: inline-block;
-            margin-top: 6px;
-            font-size: 12px;
-            color: #667eea;
-            text-decoration: none;
-            transition: all 0.3s ease;
-        }
-        .news-article .news-content .read-link:hover {
-            color: #764ba2;
-        }
+        .news-article:hover { background: rgba(255,255,255,0.04); transform: translateX(4px); }
+        .news-article.featured { border-left: 3px solid #667eea; }
+        .news-article .news-image { flex: 0 0 120px; height: 80px; overflow: hidden; border-radius: 8px; background: rgba(255,255,255,0.02); }
+        .news-article .news-image img { width: 100%; height: 100%; object-fit: cover; }
+        .news-article .news-content { flex: 1; min-width: 0; }
+        .news-article .news-content .title { font-weight: 600; font-size: 14px; color: #fff; margin-bottom: 4px; }
+        .news-article .news-content .description { font-size: 13px; color: rgba(255,255,255,0.4); margin-bottom: 6px; }
+        .news-article .news-content .meta { display: flex; gap: 12px; font-size: 11px; color: rgba(255,255,255,0.2); flex-wrap: wrap; }
+        .news-article .news-content .read-link { display: inline-block; margin-top: 6px; font-size: 12px; color: #667eea; text-decoration: none; transition: 0.3s; }
+        .news-article .news-content .read-link:hover { color: #764ba2; }
 
-        /* Input Area */
+        /* Input */
         .input-area {
             padding: 12px 20px;
-            background: rgba(0, 0, 0, 0.2);
-            border-top: 1px solid rgba(255, 255, 255, 0.04);
+            background: rgba(0,0,0,0.2);
+            border-top: 1px solid rgba(255,255,255,0.04);
             display: flex;
             gap: 10px;
             flex-shrink: 0;
         }
-
         .input-area input {
             flex: 1;
             padding: 10px 16px;
-            border: 1px solid rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255,255,255,0.04);
             border-radius: 25px;
             font-size: 14px;
             outline: none;
-            background: rgba(255, 255, 255, 0.04);
+            background: rgba(255,255,255,0.04);
             color: #e0e0e0;
-            transition: all 0.3s ease;
+            transition: 0.3s;
         }
-
-        .input-area input:focus {
-            border-color: rgba(102, 126, 234, 0.2);
-            background: rgba(255, 255, 255, 0.06);
-        }
-
-        .input-area input::placeholder {
-            color: rgba(255, 255, 255, 0.15);
-        }
-
+        .input-area input:focus { border-color: rgba(102,126,234,0.2); background: rgba(255,255,255,0.06); }
+        .input-area input::placeholder { color: rgba(255,255,255,0.15); }
         .input-area button {
             padding: 10px 24px;
             background: linear-gradient(135deg, #667eea, #764ba2);
@@ -704,113 +421,83 @@
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: 0.3s;
             white-space: nowrap;
         }
-
-        .input-area button:hover {
-            transform: scale(1.05);
-            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.2);
-        }
+        .input-area button:hover { transform: scale(1.05); box-shadow: 0 4px 20px rgba(102,126,234,0.2); }
 
         /* File Upload */
         .file-upload-area {
             padding: 8px 20px;
-            background: rgba(0, 0, 0, 0.1);
-            border-top: 1px solid rgba(255, 255, 255, 0.02);
+            background: rgba(0,0,0,0.1);
+            border-top: 1px solid rgba(255,255,255,0.02);
             display: none;
             flex-shrink: 0;
             flex-wrap: wrap;
             gap: 8px;
             align-items: center;
         }
-
-        .file-upload-area.active {
-            display: flex;
-        }
-
+        .file-upload-area.active { display: flex; }
         .file-upload-area input[type="file"] {
             flex: 1;
             min-width: 150px;
             padding: 6px;
-            color: rgba(255, 255, 255, 0.4);
+            color: rgba(255,255,255,0.4);
             font-size: 12px;
         }
-
         .file-upload-area input[type="file"]::file-selector-button {
             padding: 6px 16px;
-            background: rgba(102, 126, 234, 0.1);
+            background: rgba(102,126,234,0.1);
             color: #fff;
-            border: 1px solid rgba(102, 126, 234, 0.1);
+            border: 1px solid rgba(102,126,234,0.1);
             border-radius: 20px;
             cursor: pointer;
             font-size: 12px;
-            transition: all 0.3s ease;
+            transition: 0.3s;
         }
-
-        .file-upload-area input[type="file"]::file-selector-button:hover {
-            background: rgba(102, 126, 234, 0.2);
-        }
-
+        .file-upload-area input[type="file"]::file-selector-button:hover { background: rgba(102,126,234,0.2); }
         .file-upload-area button {
             padding: 6px 16px;
-            background: rgba(46, 213, 115, 0.1);
+            background: rgba(46,213,115,0.1);
             color: #2ed573;
-            border: 1px solid rgba(46, 213, 115, 0.1);
+            border: 1px solid rgba(46,213,115,0.1);
             border-radius: 20px;
             cursor: pointer;
             font-size: 12px;
-            transition: all 0.3s ease;
+            transition: 0.3s;
             white-space: nowrap;
         }
-
-        .file-upload-area button:hover {
-            background: rgba(46, 213, 115, 0.15);
-        }
-
+        .file-upload-area button:hover { background: rgba(46,213,115,0.15); }
         .file-upload-area button.stop-read {
-            background: rgba(255, 71, 87, 0.1);
+            background: rgba(255,71,87,0.1);
             color: #ff6b6b;
-            border-color: rgba(255, 71, 87, 0.1);
+            border-color: rgba(255,71,87,0.1);
         }
-
-        .file-upload-area button.stop-read:hover {
-            background: rgba(255, 71, 87, 0.15);
-        }
-
-        .file-upload-area .file-info {
-            color: rgba(255, 255, 255, 0.2);
-            font-size: 12px;
-            white-space: nowrap;
-        }
+        .file-upload-area button.stop-read:hover { background: rgba(255,71,87,0.15); }
+        .file-upload-area .file-info { color: rgba(255,255,255,0.2); font-size: 12px; white-space: nowrap; }
 
         /* Reading Progress */
         .reading-progress {
             padding: 6px 20px;
-            background: rgba(46, 213, 115, 0.02);
-            border-top: 1px solid rgba(46, 213, 115, 0.04);
+            background: rgba(46,213,115,0.02);
+            border-top: 1px solid rgba(46,213,115,0.04);
             display: none;
             font-size: 12px;
-            color: rgba(255, 255, 255, 0.4);
+            color: rgba(255,255,255,0.4);
             align-items: center;
             gap: 10px;
             flex-wrap: wrap;
             flex-shrink: 0;
         }
-
-        .reading-progress.active {
-            display: flex;
-        }
-
+        .reading-progress.active { display: flex; }
         .reading-progress .progress-bar {
             flex: 1;
             min-width: 80px;
             height: 4px;
-            background: rgba(255, 255, 255, 0.04);
+            background: rgba(255,255,255,0.04);
             border-radius: 2px;
             overflow: hidden;
         }
-
         .reading-progress .progress-bar .progress-fill {
             height: 100%;
             background: linear-gradient(90deg, #667eea, #2ed573);
@@ -818,115 +505,34 @@
             transition: width 0.3s ease;
             width: 0%;
         }
-
         .reading-progress .stop-speech-btn {
             padding: 3px 12px;
-            background: rgba(255, 71, 87, 0.1);
+            background: rgba(255,71,87,0.1);
             color: #ff6b6b;
-            border: 1px solid rgba(255, 71, 87, 0.1);
+            border: 1px solid rgba(255,71,87,0.1);
             border-radius: 20px;
             cursor: pointer;
             font-size: 11px;
-            transition: all 0.3s ease;
+            transition: 0.3s;
         }
+        .reading-progress .stop-speech-btn:hover { background: rgba(255,71,87,0.15); }
 
-        .reading-progress .stop-speech-btn:hover {
-            background: rgba(255, 71, 87, 0.15);
-        }
-
-        /* Responsive */
         @media (max-width: 600px) {
-            .container {
-                width: 100%;
-                height: 100vh;
-                border-radius: 0;
-            }
-
-            .container::before {
-                border-radius: 0;
-            }
-
-            .message {
-                max-width: 90%;
-            }
-
-            .header h1 {
-                font-size: 14px;
-            }
-
-            .header-info {
-                font-size: 10px;
-            }
-
-            .weather-day {
-                flex-wrap: wrap;
-                gap: 8px;
-            }
-            .weather-day .day-name {
-                min-width: 60px;
-            }
-            .weather-day .weather-details {
-                text-align: left;
-                width: 100%;
-            }
-
-            .news-article {
-                flex-direction: column;
-            }
-            .news-article .news-image {
-                flex: 0 0 150px;
-                width: 100%;
-                height: 150px;
-            }
-
-            .file-upload-area {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            .file-upload-area input[type="file"] {
-                width: 100%;
-            }
-
-            .reading-progress {
-                font-size: 11px;
-            }
-
-            #loginScreen {
-                padding: 24px;
-            }
-            #loginScreen h1 {
-                font-size: 26px;
-            }
-        }
-
-        /* Scrollbar for Chat */
-        .chat-area::-webkit-scrollbar {
-            width: 4px;
-        }
-
-        .chat-area::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.02);
-            border-radius: 2px;
-        }
-
-        .chat-area::-webkit-scrollbar-thumb {
-            background: rgba(102, 126, 234, 0.2);
-            border-radius: 2px;
-        }
-
-        .chat-area::-webkit-scrollbar-thumb:hover {
-            background: rgba(102, 126, 234, 0.3);
-        }
-
-        /* Reconnecting Animation */
-        @keyframes reconnectPulse {
-            0%, 100% { opacity: 0.3; }
-            50% { opacity: 1; }
-        }
-
-        .reconnecting {
-            animation: reconnectPulse 1s ease-in-out infinite;
-            color: #ffa502 !important;
+            .container { width: 100%; height: 100vh; border-radius: 0; }
+            .container::before { border-radius: 0; }
+            .message { max-width: 90%; }
+            .header h1 { font-size: 14px; }
+            .header-info { font-size: 10px; }
+            .weather-day { flex-wrap: wrap; gap: 8px; }
+            .weather-day .day-name { min-width: 60px; }
+            .weather-day .weather-details { text-align: left; width: 100%; }
+            .news-article { flex-direction: column; }
+            .news-article .news-image { flex: 0 0 150px; width: 100%; height: 150px; }
+            .file-upload-area { flex-direction: column; align-items: stretch; }
+            .file-upload-area input[type="file"] { width: 100%; }
+            .reading-progress { font-size: 11px; }
+            #loginScreen { padding: 24px; }
+            #loginScreen h1 { font-size: 26px; }
         }
     </style>
 </head>
@@ -946,13 +552,13 @@
                 <div class="login-info">
                     <p>👑 <strong>Admin:</strong> blessed / emmanuel</p>
                     <p>✨ New users get <strong>5 free trials</strong></p>
+                    <p>🔒 One account per device</p>
                 </div>
             </div>
         </div>
 
         <!-- Main UI -->
         <div id="mainUI">
-            <!-- Header -->
             <div class="header">
                 <h1>⚡ Bot Service</h1>
                 <div class="header-info">
@@ -965,25 +571,18 @@
                 </div>
             </div>
 
-            <!-- Chat Area -->
             <div class="chat-area" id="chatArea">
-                <div class="message received system">
-                    🤖 Welcome! Type <strong>.assist</strong> to see all available commands
-                </div>
+                <div class="message received system">🤖 Welcome! Type <strong>.assist</strong> to see all commands</div>
             </div>
 
-            <!-- Reading Progress -->
             <div class="reading-progress" id="readingProgress">
                 <span>📖 Reading:</span>
                 <span id="readingStatus">Loading...</span>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progressFill"></div>
-                </div>
+                <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
                 <span id="progressPercent">0%</span>
                 <button class="stop-speech-btn" onclick="stopReading()">⏹️ Stop</button>
             </div>
 
-            <!-- File Upload -->
             <div class="file-upload-area" id="fileUploadArea">
                 <input type="file" id="fileInput" accept=".txt,.pdf,.doc,.docx">
                 <button onclick="uploadFile()">📤 Upload & Read</button>
@@ -991,7 +590,6 @@
                 <span class="file-info" id="fileInfo">No file selected</span>
             </div>
 
-            <!-- Input Area -->
             <div class="input-area">
                 <input type="text" id="commandInput" placeholder="Type a command... (.weather, .news, .assist)">
                 <button onclick="sendCommand()">Send</button>
@@ -1000,9 +598,15 @@
     </div>
 
     <script>
-        // ============================================
-        // STATE
-        // ============================================
+        // ===== DEVICE ID (persistent) =====
+        let deviceId = localStorage.getItem('botDeviceId');
+        if (!deviceId) {
+            deviceId = crypto.randomUUID ? crypto.randomUUID() : 'dev-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('botDeviceId', deviceId);
+        }
+        console.log('🔑 Device ID:', deviceId);
+
+        // ===== STATE =====
         let ws;
         let currentUser = null;
         let userId = null;
@@ -1011,29 +615,26 @@
         let reconnectAttempts = 0;
         const MAX_RECONNECT_ATTEMPTS = 5;
         let reconnectTimeout = null;
+        let isWaitingForNextLine = false;
 
-        // ============================================
-        // CONNECTION MANAGEMENT
-        // ============================================
+        // ===== CONNECTION =====
         function connectWebSocket(isReconnect = false) {
             if (ws && ws.readyState === WebSocket.OPEN) return;
-
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const wsUrl = `${protocol}//${window.location.host}`;
-
             ws = new WebSocket(wsUrl);
 
             ws.onopen = () => {
                 console.log('✅ WebSocket connected');
                 reconnectAttempts = 0;
                 updateStatus('online', 'Connected');
-                
                 if (currentUser) {
                     ws.send(JSON.stringify({
                         type: 'auth',
                         username: currentUser.username,
                         password: currentUser.password || '',
-                        isNewUser: false
+                        isNewUser: false,
+                        deviceId: deviceId
                     }));
                 }
             };
@@ -1068,20 +669,13 @@
         }
 
         function handleDisconnect() {
-            if (reconnectTimeout) {
-                clearTimeout(reconnectTimeout);
-                reconnectTimeout = null;
-            }
-
+            if (reconnectTimeout) clearTimeout(reconnectTimeout);
             if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
                 reconnectAttempts++;
                 const delay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), 30000);
                 updateStatus('connecting', `Reconnecting in ${Math.round(delay/1000)}s... (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
-                
                 reconnectTimeout = setTimeout(() => {
-                    if (!ws || ws.readyState !== WebSocket.OPEN) {
-                        connectWebSocket(true);
-                    }
+                    if (!ws || ws.readyState !== WebSocket.OPEN) connectWebSocket(true);
                 }, delay);
             } else {
                 updateStatus('offline', 'Disconnected - Please refresh');
@@ -1092,7 +686,6 @@
         function updateStatus(state, text) {
             const indicator = document.getElementById('statusIndicator');
             const textEl = document.getElementById('statusText');
-            
             indicator.className = 'status-indicator ' + state;
             textEl.textContent = text;
         }
@@ -1100,15 +693,11 @@
         function updateUserBadge() {
             if (!currentUser) return;
             const role = currentUser.role === 'admin' ? '👑 Admin' : '👤 User';
-            const trialInfo = currentUser.role !== 'admin' ? 
-                ` | ${currentUser.trials.used}/${currentUser.trials.total} trials` : '';
-            document.getElementById('userBadge').textContent = 
-                `${role}: ${currentUser.username} (${currentUser.userId})${trialInfo}`;
+            const trialInfo = currentUser.role !== 'admin' ? ` | ${currentUser.trials.used}/${currentUser.trials.total} trials` : '';
+            document.getElementById('userBadge').textContent = `${role}: ${currentUser.username} (${currentUser.userId})${trialInfo}`;
         }
 
-        // ============================================
-        // AUTHENTICATION
-        // ============================================
+        // ===== AUTH =====
         function login(isNewUser) {
             const username = document.getElementById('loginUsername').value.trim();
             const password = document.getElementById('loginPassword').value.trim();
@@ -1119,20 +708,19 @@
                 errorDiv.textContent = 'Please enter username and password';
                 return;
             }
-
             errorDiv.style.display = 'none';
 
             currentUser = { username, password };
-
             connectWebSocket();
 
-            const authTimeout = setTimeout(() => {
+            setTimeout(() => {
                 if (ws && ws.readyState === WebSocket.OPEN) {
                     ws.send(JSON.stringify({
                         type: 'auth',
-                        username: username,
-                        password: password,
-                        isNewUser: isNewUser
+                        username,
+                        password,
+                        isNewUser,
+                        deviceId: deviceId
                     }));
                 }
             }, 100);
@@ -1148,11 +736,8 @@
                         errorDiv.style.display = 'block';
                         errorDiv.textContent = data.data;
                     }
-                } catch (error) {
-                    console.error('Auth error:', error);
-                }
+                } catch (error) { console.error('Auth error:', error); }
             };
-
             ws.addEventListener('message', authHandler);
         }
 
@@ -1163,7 +748,6 @@
 
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('mainUI').style.display = 'flex';
-
             updateUserBadge();
 
             if (data.data.isNewUser) {
@@ -1173,589 +757,285 @@
             ws.onmessage = (event) => {
                 try {
                     const msg = JSON.parse(event.data);
-                    if (msg.type !== 'auth_success') {
-                        handleMessage(msg);
-                    }
-                } catch (error) {
-                    console.error('Message error:', error);
-                }
+                    if (msg.type !== 'auth_success') handleMessage(msg);
+                } catch (error) { console.error('Message error:', error); }
             };
 
             addMessage('system', `✅ Logged in as ${currentUser.username} (${currentUser.userId})`);
-            if (currentUser.role === 'admin') {
-                addMessage('system', '👑 You are logged in as Admin');
-            }
+            if (currentUser.role === 'admin') addMessage('system', '👑 You are logged in as Admin');
         }
 
-        // ============================================
-        // TEXT-TO-SPEECH
-        // ============================================
-        function speakText(text) {
-            if (!('speechSynthesis' in window)) return;
-            
+        // ===== TEXT-TO-SPEECH (deep male voice) =====
+        function speakText(text, onDone) {
+            if (!('speechSynthesis' in window)) {
+                if (onDone) onDone();
+                return;
+            }
             window.speechSynthesis.cancel();
-            
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'en-US';
             utterance.rate = 0.85;
-            utterance.pitch = 1;
+            utterance.pitch = 0.6;   // deep male voice
             utterance.volume = 1;
-            
+
             const voices = window.speechSynthesis.getVoices();
-            const preferredVoice = voices.find(v => 
-                v.lang.startsWith('en') && 
-                (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Samantha'))
+            const maleVoices = voices.filter(v =>
+                v.lang.startsWith('en') &&
+                (v.name.toLowerCase().includes('male') ||
+                 v.name.toLowerCase().includes('david') ||
+                 v.name.toLowerCase().includes('mark') ||
+                 v.name.toLowerCase().includes('james') ||
+                 v.name.toLowerCase().includes('microsoft') ||
+                 v.name.toLowerCase().includes('google uk'))
             );
-            if (preferredVoice) utterance.voice = preferredVoice;
-            
+            utterance.voice = maleVoices.length > 0 ? maleVoices[0] : voices.find(v => v.lang.startsWith('en'));
+
+            utterance.onend = () => { if (onDone) onDone(); };
+            utterance.onerror = () => { if (onDone) onDone(); };
             window.speechSynthesis.speak(utterance);
         }
 
-        // ============================================
-        // MESSAGE HANDLING
-        // ============================================
+        // ===== MESSAGE HANDLING =====
         function handleMessage(data) {
-            console.log('📨 Message type:', data.type);
-
-            switch(data.type) {
-                // ── WEATHER ──
-                case 'weather':
-                    const weatherData = data.data;
-                    let weatherHTML = `
-                        <div class="message weather">
-                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
-                                <span style="font-size: 28px;">🌤️</span>
-                                <div>
-                                    <strong style="font-size: 18px; color: #fff;">Weather Forecast</strong>
-                                    <div style="font-size: 13px; color: rgba(255,255,255,0.3);">
-                                        ${weatherData.city}${weatherData.country ? ', ' + weatherData.country : ''}
-                                    </div>
-                                </div>
-                            </div>
-                    `;
-                    
-                    weatherData.forecast.forEach(day => {
-                        const date = new Date(day.date);
-                        const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
-                        const monthDay = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            switch (data.type) {
+                case 'weather': {
+                    const w = data.data;
+                    let html = `<div class="message weather"><div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;"><span style="font-size:28px;">🌤️</span><div><strong style="font-size:18px;color:#fff;">Weather Forecast</strong><div style="font-size:13px;color:rgba(255,255,255,0.3);">${w.city}${w.country ? ', '+w.country : ''}</div></div></div>`;
+                    w.forecast.forEach(day => {
+                        const d = new Date(day.date);
+                        const dayName = d.toLocaleDateString('en-US', { weekday:'short' });
+                        const monthDay = d.toLocaleDateString('en-US', { month:'short', day:'numeric' });
                         const iconUrl = `https://openweathermap.org/img/wn/${day.icon || '01d'}@2x.png`;
-                        
-                        weatherHTML += `
-                            <div class="weather-day">
-                                <div class="day-name">
-                                    <div>${dayName}</div>
-                                    <div class="date">${monthDay}</div>
-                                </div>
-                                <div class="weather-icon">
-                                    <img src="${iconUrl}" alt="${day.description}">
-                                </div>
-                                <div class="weather-info">
-                                    <div class="temp">
-                                        ${Math.round(day.temp_avg)}°C
-                                        <span class="temp-range">
-                                            (${Math.round(day.temp_min)}°C - ${Math.round(day.temp_max)}°C)
-                                        </span>
-                                    </div>
-                                    <div class="desc">${day.description}</div>
-                                </div>
-                                <div class="weather-details">
-                                    <div>💧 ${day.humidity}%</div>
-                                    <div>💨 ${day.windSpeed || 0} km/h</div>
-                                    <div>🌡️ Feels ${Math.round(day.feelsLike || day.temp_avg)}°C</div>
-                                </div>
-                            </div>
-                        `;
+                        html += `<div class="weather-day"><div class="day-name"><div>${dayName}</div><div class="date">${monthDay}</div></div><div class="weather-icon"><img src="${iconUrl}"></div><div class="weather-info"><div class="temp">${Math.round(day.temp_avg)}°C <span class="temp-range">(${Math.round(day.temp_min)}°C - ${Math.round(day.temp_max)}°C)</span></div><div class="desc">${day.description}</div></div><div class="weather-details"><div>💧 ${day.humidity}%</div><div>💨 ${day.windSpeed||0} km/h</div><div>🌡️ Feels ${Math.round(day.feelsLike||day.temp_avg)}°C</div></div></div>`;
                     });
-                    
-                    if (data.data.note) {
-                        weatherHTML += `<div style="margin-top: 12px; font-size: 12px; color: #ff6b6b;">${data.data.note}</div>`;
-                    }
-                    weatherHTML += '</div>';
-                    document.getElementById('chatArea').innerHTML += weatherHTML;
+                    if (w.note) html += `<div style="margin-top:12px;font-size:12px;color:#ff6b6b;">${w.note}</div>`;
+                    html += '</div>';
+                    document.getElementById('chatArea').innerHTML += html;
                     break;
-
-                // ── NEWS ──
-                case 'news':
-                    const newsData = data.data;
-                    let newsHTML = `
-                        <div class="message news">
-                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
-                                <span style="font-size: 28px;">📰</span>
-                                <div>
-                                    <strong style="font-size: 18px; color: #fff;">${newsData.category === 'malawi' ? '🇲🇼 Malawi' : '🌍 Global'} News</strong>
-                                    <div style="font-size: 12px; color: rgba(255,255,255,0.2);">${newsData.total || 0} articles</div>
-                                </div>
-                            </div>
-                    `;
-                    
-                    newsData.articles.forEach((article, index) => {
-                        const desc = article.description && article.description.length > 200 
-                            ? article.description.substring(0, 200) + '...' 
-                            : article.description || 'No description available';
-                        
-                        newsHTML += `
-                            <div class="news-article ${index === 0 ? 'featured' : ''}">
-                                ${article.image ? `
-                                    <div class="news-image">
-                                        <img src="${article.image}" alt="${article.title}">
-                                    </div>
-                                ` : ''}
-                                <div class="news-content">
-                                    <div class="title">${article.title}</div>
-                                    <div class="description">${desc}</div>
-                                    <div class="meta">
-                                        <span>📌 ${article.source}</span>
-                                        ${article.author && article.author !== 'Unknown' ? `<span>✍️ ${article.author}</span>` : ''}
-                                        <span>📅 ${article.publishedAt}</span>
-                                    </div>
-                                    <a href="${article.url}" target="_blank" class="read-link">🔗 Read full article →</a>
-                                </div>
-                            </div>
-                        `;
+                }
+                case 'news': {
+                    const n = data.data;
+                    let html = `<div class="message news"><div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;"><span style="font-size:28px;">📰</span><div><strong style="font-size:18px;color:#fff;">${n.category === 'malawi' ? '🇲🇼 Malawi' : '🌍 Global'} News</strong><div style="font-size:12px;color:rgba(255,255,255,0.2);">${n.total||0} articles</div></div></div>`;
+                    n.articles.forEach((a, i) => {
+                        const desc = a.description && a.description.length > 200 ? a.description.substring(0,200)+'...' : a.description || 'No description';
+                        html += `<div class="news-article ${i===0?'featured':''}">${a.image ? `<div class="news-image"><img src="${a.image}"></div>` : ''}<div class="news-content"><div class="title">${a.title}</div><div class="description">${desc}</div><div class="meta"><span>📌 ${a.source}</span>${a.author && a.author!=='Unknown' ? `<span>✍️ ${a.author}</span>` : ''}<span>📅 ${a.publishedAt}</span></div><a href="${a.url}" target="_blank" class="read-link">🔗 Read full article →</a></div></div>`;
                     });
-                    
-                    if (data.data.note) {
-                        newsHTML += `<div style="margin-top: 12px; font-size: 12px; color: #ff6b6b;">${data.data.note}</div>`;
-                    }
-                    newsHTML += '</div>';
-                    document.getElementById('chatArea').innerHTML += newsHTML;
+                    if (n.note) html += `<div style="margin-top:12px;font-size:12px;color:#ff6b6b;">${n.note}</div>`;
+                    html += '</div>';
+                    document.getElementById('chatArea').innerHTML += html;
                     break;
-
-                // ── READ ──
+                }
                 case 'read_prompt':
                     document.getElementById('fileUploadArea').classList.add('active');
                     document.getElementById('fileInfo').textContent = 'Ready for upload';
                     addMessage('system', '📄 Please upload a document to read aloud');
                     break;
-
-                case 'read_line':
-                    const lineContent = data.data.content;
+                case 'read_line': {
+                    const line = data.data.content;
                     const lineNum = data.data.lineNumber;
-                    const totalLines = data.data.totalLines;
-                    
-                    addMessage('read-line', `📖 Line ${lineNum}/${totalLines}: ${lineContent}`);
-                    
-                    const progress = (lineNum / totalLines) * 100;
-                    document.getElementById('readingStatus').textContent = `Line ${lineNum}/${totalLines}`;
-                    document.getElementById('progressFill').style.width = progress + '%';
-                    document.getElementById('progressPercent').textContent = Math.round(progress) + '%';
+                    const total = data.data.totalLines;
+                    addMessage('read-line', `📖 Line ${lineNum}/${total}: ${line}`);
+                    const pct = (lineNum / total) * 100;
+                    document.getElementById('readingStatus').textContent = `Line ${lineNum}/${total}`;
+                    document.getElementById('progressFill').style.width = pct + '%';
+                    document.getElementById('progressPercent').textContent = Math.round(pct) + '%';
                     document.getElementById('readingProgress').classList.add('active');
-                    
-                    if (lineContent && lineContent.trim()) {
-                        speakText(lineContent);
-                    }
+                    isWaitingForNextLine = true;
+                    speakText(line, () => {
+                        isWaitingForNextLine = false;
+                        if (ws && ws.readyState === WebSocket.OPEN) {
+                            ws.send(JSON.stringify({ type: 'next_line', userId: userId }));
+                        }
+                    });
                     break;
-
+                }
                 case 'read_complete':
                     addMessage('system', '✅ Finished reading the entire document');
                     document.getElementById('readingProgress').classList.remove('active');
                     document.getElementById('fileUploadArea').classList.remove('active');
                     isReading = false;
-                    if ('speechSynthesis' in window) {
-                        window.speechSynthesis.cancel();
-                    }
+                    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
                     break;
-
-                // ── PUBLIC MESSAGES ──
                 case 'public':
                     if (data.data.type === 'file') {
-                        addMessage('received', `
-                            <div class="file-message">
-                                <strong style="color: #fff;">📹 ${data.data.message}</strong><br>
-                                <video controls style="max-width: 100%; max-height: 400px; border-radius: 12px; margin-top: 10px;">
-                                    <source src="${data.data.file.url}" type="video/mp4">
-                                    Your browser does not support the video tag.
-                                </video>
-                                <div class="file-info">
-                                    📁 ${data.data.file.name} (${data.data.file.size}) 
-                                    ${data.data.file.quality ? `| Quality: ${data.data.file.quality}` : ''}
-                                </div>
-                                <a href="${data.data.file.url}" download="${data.data.file.name}" class="download-btn">
-                                    ⬇️ Download Video
-                                </a>
-                            </div>
-                        `);
+                        addMessage('received', `<div class="file-message"><strong style="color:#fff;">📹 ${data.data.message}</strong><br><video controls style="max-width:100%;max-height:400px;border-radius:12px;margin-top:10px;"><source src="${data.data.file.url}" type="video/mp4"></video><div class="file-info">📁 ${data.data.file.name} (${data.data.file.size}) ${data.data.file.quality ? '| Quality: '+data.data.file.quality : ''}</div><a href="${data.data.file.url}" download="${data.data.file.name}" class="download-btn">⬇️ Download Video</a></div>`);
                     } else {
                         addMessage('received', data.data.message);
                     }
                     break;
-
-                case 'confirm':
-                    addMessage('sent', `✅ ${data.data}`);
+                case 'system_broadcast':
+                    addMessage('system-broadcast', `📢 ${data.data.message}<span class="sender">— ${data.data.sender} • ${new Date(data.data.timestamp).toLocaleTimeString()}</span>`);
                     break;
-
-                case 'help':
-                    addMessage('received', data.data.replace(/\n/g, '<br>'));
+                case 'confirm': addMessage('sent', `✅ ${data.data}`); break;
+                case 'help': addMessage('received', data.data.replace(/\n/g, '<br>')); break;
+                case 'developer': {
+                    const d = data.data;
+                    addMessage('received', `<strong style="color:#fff;">👨‍💻 Developer Information</strong><br><br><strong>Name:</strong> ${d.name}<br><strong>Education:</strong> ${d.education}<br><strong>Program:</strong> ${d.program}<br><strong>Skills:</strong> ${d.skills.join(', ')}`);
                     break;
-
-                case 'developer':
-                    const dev = data.data;
-                    addMessage('received', `
-                        <strong style="color: #fff;">👨‍💻 Developer Information</strong><br><br>
-                        <strong>Name:</strong> ${dev.name}<br>
-                        <strong>Education:</strong> ${dev.education}<br>
-                        <strong>Program:</strong> ${dev.program}<br>
-                        <strong>Skills:</strong> ${dev.skills.join(', ')}
-                    `);
-                    break;
-
-                case 'tune':
-                    addMessage('received', `
-                        <strong style="color: #fff;">🔄 Tuned Text</strong><br><br>
-                        <strong>Original:</strong><br>${data.data.original}<br><br>
-                        <strong>Humanized:</strong><br>${data.data.humanized}
-                    `);
-                    break;
-
-                // ── SHOT ──
-                case 'shot_success':
-                    if (data.data.downloadLinks) {
-                        let linksHTML = `
-                            <div class="message file-message">
-                                <div style="margin-bottom: 12px;">
-                                    <strong style="color: #fff;">📹 ${data.data.message}</strong>
-                                </div>
-                                <div style="font-size: 13px; color: rgba(255,255,255,0.4); margin-bottom: 12px;">
-                                    🆔 Video ID: ${data.data.videoId}<br>
-                                    🔗 Video URL: <a href="${data.data.videoUrl}" target="_blank" style="color: #667eea;">${data.data.videoUrl}</a>
-                                </div>
-                                <div style="font-weight: 600; margin-bottom: 10px; color: #fff;">${data.data.note}</div>
-                        `;
-                        
-                        data.data.downloadLinks.forEach(link => {
-                            linksHTML += `
-                                <div style="background: rgba(255,255,255,0.02); padding: 10px 14px; border-radius: 10px; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.03);">
-                                    <div style="font-weight: 500; color: #fff;">${link.name}</div>
-                                    <div style="font-size: 12px; color: rgba(255,255,255,0.3); margin: 4px 0;">
-                                        <a href="${link.url}" target="_blank" style="color: #667eea;">${link.url}</a>
-                                    </div>
-                                    <div style="font-size: 11px; color: rgba(255,255,255,0.2); white-space: pre-line;">${link.instructions}</div>
-                                </div>
-                            `;
+                }
+                case 'tune': addMessage('received', `<strong style="color:#fff;">🔄 Tuned Text</strong><br><br><strong>Original:</strong><br>${data.data.original}<br><br><strong>Humanized:</strong><br>${data.data.humanized}`); break;
+                case 'shot_success': {
+                    const s = data.data;
+                    if (s.downloadLinks) {
+                        let links = `<div class="message file-message"><div style="margin-bottom:12px;"><strong style="color:#fff;">📹 ${s.message}</strong></div><div style="font-size:13px;color:rgba(255,255,255,0.4);margin-bottom:12px;">🆔 Video ID: ${s.videoId}<br>🔗 Video URL: <a href="${s.videoUrl}" target="_blank" style="color:#667eea;">${s.videoUrl}</a></div><div style="font-weight:600;margin-bottom:10px;color:#fff;">${s.note}</div>`;
+                        s.downloadLinks.forEach(link => {
+                            links += `<div style="background:rgba(255,255,255,0.02);padding:10px 14px;border-radius:10px;margin-bottom:8px;border:1px solid rgba(255,255,255,0.03);"><div style="font-weight:500;color:#fff;">${link.name}</div><div style="font-size:12px;color:rgba(255,255,255,0.3);margin:4px 0;"><a href="${link.url}" target="_blank" style="color:#667eea;">${link.url}</a></div><div style="font-size:11px;color:rgba(255,255,255,0.2);white-space:pre-line;">${link.instructions}</div></div>`;
                         });
-                        
-                        linksHTML += `
-                                ${data.data.instruction ? `<div style="margin-top: 12px; font-size: 12px; color: rgba(255,255,255,0.3);">💡 ${data.data.instruction}</div>` : ''}
-                            </div>
-                        `;
-                        addMessage('received', linksHTML);
+                        links += `${s.instruction ? `<div style="margin-top:12px;font-size:12px;color:rgba(255,255,255,0.3);">💡 ${s.instruction}</div>` : ''}</div>`;
+                        addMessage('received', links);
                     } else {
-                        addMessage('received', `
-                            <div class="file-message">
-                                <strong style="color: #fff;">📹 ${data.data.message}</strong><br>
-                                <video controls style="max-width: 100%; max-height: 400px; border-radius: 12px; margin-top: 10px;">
-                                    <source src="${data.data.videoUrl}" type="video/mp4">
-                                    Your browser does not support the video tag.
-                                </video>
-                                <div class="file-info">
-                                    📁 ${data.data.filename || 'Facebook Video'} (${data.data.size || 'Unknown'}) 
-                                    ${data.data.quality ? `| Quality: ${data.data.quality}` : ''}
-                                </div>
-                                <a href="${data.data.videoUrl}" download="${data.data.filename || 'video.mp4'}" class="download-btn">
-                                    ⬇️ Download Video
-                                </a>
-                                ${data.data.note ? `<div style="margin-top: 8px; font-size: 12px; color: rgba(255,255,255,0.3);">${data.data.note}</div>` : ''}
-                            </div>
-                        `);
+                        addMessage('received', `<div class="file-message"><strong style="color:#fff;">📹 ${s.message}</strong><br><video controls style="max-width:100%;max-height:400px;border-radius:12px;margin-top:10px;"><source src="${s.videoUrl}" type="video/mp4"></video><div class="file-info">📁 ${s.filename||'Facebook Video'} (${s.size||'Unknown'}) ${s.quality ? '| Quality: '+s.quality : ''}</div><a href="${s.videoUrl}" download="${s.filename||'video.mp4'}" class="download-btn">⬇️ Download Video</a>${s.note ? `<div style="margin-top:8px;font-size:12px;color:rgba(255,255,255,0.3);">${s.note}</div>` : ''}</div>`);
                     }
                     break;
-
-                case 'shot_progress':
-                    addMessage('received', `⏳ ${data.data}`);
+                }
+                case 'shot_progress': addMessage('received', `⏳ ${data.data}`); break;
+                case 'trace_progress': addMessage('received', `⏳ ${data.data}`); break;
+                case 'trace_success': {
+                    const t = data.data;
+                    let html = `<div class="message received" style="width:100%;max-width:100%;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:16px;"><div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;"><span style="font-size:24px;">🗺️</span><div><strong style="color:#fff;font-size:16px;">IP Geolocation</strong><div style="font-size:12px;color:rgba(255,255,255,0.3);">${t.query}</div></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 20px;font-size:13px;color:rgba(255,255,255,0.7);"><div><span style="color:rgba(255,255,255,0.3);">🌍 Country</span> ${t.country} (${t.countryCode})</div><div><span style="color:rgba(255,255,255,0.3);">🏙️ Region</span> ${t.region}</div><div><span style="color:rgba(255,255,255,0.3);">📍 City</span> ${t.city}</div><div><span style="color:rgba(255,255,255,0.3);">📮 ZIP</span> ${t.zip}</div><div><span style="color:rgba(255,255,255,0.3);">🌐 Coordinates</span> ${t.lat}, ${t.lon}</div><div><span style="color:rgba(255,255,255,0.3);">🕐 Timezone</span> ${t.timezone}</div><div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.04);padding-top:8px;margin-top:4px;"><span style="color:rgba(255,255,255,0.3);">📡 ISP</span> ${t.isp}</div><div style="grid-column:1/-1;"><span style="color:rgba(255,255,255,0.3);">🏢 Organization</span> ${t.org}</div><div style="grid-column:1/-1;"><span style="color:rgba(255,255,255,0.3);">🔗 AS</span> ${t.as} ${t.asname ? '- '+t.asname : ''}</div><div style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.04);padding-top:8px;margin-top:4px;display:flex;gap:16px;font-size:12px;"><span>📱 Mobile: ${t.mobile}</span><span>🔒 Proxy/VPN: ${t.proxy}</span><span>☁️ Hosting: ${t.hosting}</span></div></div></div>`;
+                    document.getElementById('chatArea').innerHTML += html;
                     break;
-
-                // ── TRACE ──
-                case 'trace_progress':
-                    addMessage('received', `⏳ ${data.data}`);
-                    break;
-
-                case 'trace_success':
-                    const trace = data.data;
-                    let traceHTML = `
-                        <div class="message received" style="width: 100%; max-width: 100%; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 16px;">
-                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 14px;">
-                                <span style="font-size: 24px;">🗺️</span>
-                                <div>
-                                    <strong style="color: #fff; font-size: 16px;">IP Geolocation</strong>
-                                    <div style="font-size: 12px; color: rgba(255,255,255,0.3);">${trace.query}</div>
-                                </div>
-                            </div>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px 20px; font-size: 13px; color: rgba(255,255,255,0.7);">
-                                <div><span style="color: rgba(255,255,255,0.3);">🌍 Country</span> ${trace.country} (${trace.countryCode})</div>
-                                <div><span style="color: rgba(255,255,255,0.3);">🏙️ Region</span> ${trace.region}</div>
-                                <div><span style="color: rgba(255,255,255,0.3);">📍 City</span> ${trace.city}</div>
-                                <div><span style="color: rgba(255,255,255,0.3);">📮 ZIP</span> ${trace.zip}</div>
-                                <div><span style="color: rgba(255,255,255,0.3);">🌐 Coordinates</span> ${trace.lat}, ${trace.lon}</div>
-                                <div><span style="color: rgba(255,255,255,0.3);">🕐 Timezone</span> ${trace.timezone}</div>
-                                <div style="grid-column: 1 / -1; border-top: 1px solid rgba(255,255,255,0.04); padding-top: 8px; margin-top: 4px;">
-                                    <span style="color: rgba(255,255,255,0.3);">📡 ISP</span> ${trace.isp}
-                                </div>
-                                <div style="grid-column: 1 / -1;">
-                                    <span style="color: rgba(255,255,255,0.3);">🏢 Organization</span> ${trace.org}
-                                </div>
-                                <div style="grid-column: 1 / -1;">
-                                    <span style="color: rgba(255,255,255,0.3);">🔗 AS</span> ${trace.as} ${trace.asname ? '- ' + trace.asname : ''}
-                                </div>
-                                <div style="grid-column: 1 / -1; border-top: 1px solid rgba(255,255,255,0.04); padding-top: 8px; margin-top: 4px; display: flex; gap: 16px; font-size: 12px;">
-                                    <span>📱 Mobile: ${trace.mobile}</span>
-                                    <span>🔒 Proxy/VPN: ${trace.proxy}</span>
-                                    <span>☁️ Hosting: ${trace.hosting}</span>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    document.getElementById('chatArea').innerHTML += traceHTML;
-                    break;
-
-                // ── ERRORS ──
-                case 'error':
-                    addMessage('error', `❌ ${data.data}`);
-                    break;
-
-                // ── TRIALS ──
-                case 'trial_expired':
+                }
+                case 'error': addMessage('error', `❌ ${data.data}`); break;
+                case 'trial_expired': {
                     const info = data.data;
-                    let upgradeMsg = `⚠️ ${info.message}<br><br>`;
-                    upgradeMsg += `<strong>Upgrade Information:</strong><br>`;
-                    upgradeMsg += `💰 Price: ${info.upgradeInfo.price}<br>`;
-                    upgradeMsg += `📱 Payment Methods:<br>`;
-                    info.upgradeInfo.methods.forEach(method => {
-                        upgradeMsg += `• ${method.provider}: ${method.number}<br>`;
-                    });
-                    upgradeMsg += `<br>📲 After payment, send confirmation + your ID to admin on WhatsApp: ${info.upgradeInfo.adminWhatsApp}`;
-                    addMessage('upgrade-info', upgradeMsg);
+                    let msg = `⚠️ ${info.message}<br><br><strong>Upgrade Information:</strong><br>💰 Price: ${info.upgradeInfo.price}<br>📱 Payment Methods:<br>`;
+                    info.upgradeInfo.methods.forEach(m => { msg += `• ${m.provider}: ${m.number}<br>`; });
+                    msg += `<br>📲 After payment, send confirmation + your ID to admin on WhatsApp: ${info.upgradeInfo.adminWhatsApp}`;
+                    addMessage('upgrade-info', msg);
                     break;
-
-                case 'myid':
-                    const user = data.data;
-                    let idMsg = `📋 <strong>Your User Information</strong><br><br>`;
-                    idMsg += `User ID: ${user.userId}<br>`;
-                    idMsg += `Username: ${user.username}<br>`;
-                    idMsg += `Role: ${user.role}<br>`;
-                    idMsg += `Status: ${user.isPremium ? '✅ PREMIUM' : '🆓 Free User'}<br>`;
-                    idMsg += `Trials Used: ${user.trials.used}/${user.trials.total}<br>`;
-                    if (user.isPremium) {
-                        const expiryDate = new Date(user.trials.expiry);
-                        const daysLeft = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
-                        idMsg += `Premium Expiry: ${new Date(user.trials.expiry).toLocaleDateString()} (${daysLeft} days left)`;
+                }
+                case 'myid': {
+                    const u = data.data;
+                    let idMsg = `📋 <strong>Your User Information</strong><br><br>User ID: ${u.userId}<br>Username: ${u.username}<br>Role: ${u.role}<br>Status: ${u.isPremium ? '✅ PREMIUM' : '🆓 Free User'}<br>Trials Used: ${u.trials.used}/${u.trials.total}<br>`;
+                    if (u.isPremium) {
+                        const daysLeft = Math.ceil((new Date(u.trials.expiry) - new Date()) / (1000*60*60*24));
+                        idMsg += `Premium Expiry: ${new Date(u.trials.expiry).toLocaleDateString()} (${daysLeft} days left)`;
                     } else {
-                        const remaining = user.trials.total - user.trials.used;
-                        idMsg += `Remaining Trials: ${remaining}`;
+                        idMsg += `Remaining Trials: ${u.trials.total - u.trials.used}`;
                     }
                     addMessage('received', idMsg);
                     break;
-
-                case 'trials_info':
-                    addMessage('trial-info', data.data.replace(/\n/g, '<br>'));
-                    break;
-
-                case 'upgrade_success':
-                    addMessage('system', `
-                        ✅ User ${data.data.userId} (${data.data.username}) upgraded to premium for ${data.data.days} days!<br>
-                        Expiry: ${new Date(data.data.expiry).toLocaleDateString()}
-                    `);
-                    break;
-
-                case 'upgraded':
-                    addMessage('system', `🎉 ${data.data.message}<br>Expiry: ${new Date(data.data.expiry).toLocaleDateString()}`);
-                    break;
-
-                case 'user_login':
-                    addMessage('system', `👤 User ${data.data.userId} (${data.data.username}) logged in${data.data.isNew ? ' (NEW)' : ''} at ${new Date(data.data.time).toLocaleTimeString()}`);
-                    break;
-
-                case 'history':
-                    break;
-
-                default:
-                    console.log('Unknown message type:', data);
+                }
+                case 'deviceid': addMessage('received', `🔑 <strong>Your Device ID</strong><br><br>${data.data.deviceId}<br><br>${data.data.message}`); break;
+                case 'trials_info': addMessage('trial-info', data.data.replace(/\n/g, '<br>')); break;
+                case 'upgrade_success': addMessage('system', `✅ User ${data.data.userId} (${data.data.username}) upgraded to premium for ${data.data.days} days!<br>Expiry: ${new Date(data.data.expiry).toLocaleDateString()}`); break;
+                case 'upgraded': addMessage('system', `🎉 ${data.data.message}<br>Expiry: ${new Date(data.data.expiry).toLocaleDateString()}`); break;
+                case 'user_login': addMessage('system', `👤 User ${data.data.userId} (${data.data.username}) logged in${data.data.isNew ? ' (NEW)' : ''} at ${new Date(data.data.time).toLocaleTimeString()}`); break;
+                default: console.log('Unknown type:', data.type);
             }
-
             document.getElementById('chatArea').scrollTop = document.getElementById('chatArea').scrollHeight;
         }
 
-        // ============================================
-        // UI HELPERS
-        // ============================================
         function addMessage(type, content) {
             const chatArea = document.getElementById('chatArea');
-            let messageClass = 'received';
-            if (type === 'sent') messageClass = 'sent';
-            else if (type === 'error') messageClass = 'error';
-            else if (type === 'system') messageClass = 'system';
-            else if (type === 'trial-info') messageClass = 'trial-info';
-            else if (type === 'upgrade-info') messageClass = 'upgrade-info';
-            else if (type === 'read-line') messageClass = 'read-line';
-            
-            chatArea.innerHTML += `<div class="message ${messageClass}">${content}</div>`;
+            let cls = 'received';
+            if (type === 'sent') cls = 'sent';
+            else if (type === 'error') cls = 'error';
+            else if (type === 'system') cls = 'system';
+            else if (type === 'system-broadcast') cls = 'system-broadcast';
+            else if (type === 'trial-info') cls = 'trial-info';
+            else if (type === 'upgrade-info') cls = 'upgrade-info';
+            else if (type === 'read-line') cls = 'read-line';
+            chatArea.innerHTML += `<div class="message ${cls}">${content}</div>`;
             chatArea.scrollTop = chatArea.scrollHeight;
         }
 
-        // ============================================
-        // COMMANDS
-        // ============================================
+        // ===== COMMANDS =====
         function sendCommand() {
             const input = document.getElementById('commandInput');
             const command = input.value.trim();
-
             if (!command || !ws || ws.readyState !== WebSocket.OPEN) {
-                if (!ws || ws.readyState !== WebSocket.OPEN) {
-                    addMessage('error', '❌ Not connected to server. Please wait for reconnection.');
-                }
+                if (!ws || ws.readyState !== WebSocket.OPEN) addMessage('error', '❌ Not connected to server.');
                 return;
             }
-
-            let cmd = command;
-            let args = '';
+            let cmd = command, args = '';
             const spaceIndex = command.indexOf(' ');
-            if (spaceIndex > 0) {
-                cmd = command.substring(0, spaceIndex);
-                args = command.substring(spaceIndex + 1).trim();
-            }
-
+            if (spaceIndex > 0) { cmd = command.substring(0, spaceIndex); args = command.substring(spaceIndex + 1).trim(); }
             ws.send(JSON.stringify({ command: cmd, args: args }));
             addMessage('sent', command);
             input.value = '';
         }
 
-        // ============================================
-        // READ COMMAND - FILE UPLOAD
-        // ============================================
+        // ===== READ =====
         function uploadFile() {
             const fileInput = document.getElementById('fileInput');
             const file = fileInput.files[0];
-
-            if (!file) {
-                alert('Please select a file first');
-                return;
-            }
-
+            if (!file) { alert('Please select a file first'); return; }
             document.getElementById('fileInfo').textContent = `📄 ${file.name}`;
-
             const formData = new FormData();
             formData.append('file', file);
-
-            fetch('/upload', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                addMessage('system', `📄 ${data.message}`);
-                document.getElementById('readingStatus').textContent = `Starting...`;
-                startReading();
-            })
-            .catch(error => {
-                alert('Error uploading file: ' + error.message);
-            });
+            fetch('/upload', { method: 'POST', body: formData })
+                .then(r => r.json())
+                .then(data => {
+                    addMessage('system', `📄 ${data.message}`);
+                    document.getElementById('readingStatus').textContent = 'Starting...';
+                    startReading();
+                })
+                .catch(err => alert('Error uploading file: ' + err.message));
         }
 
         function startReading() {
             fetch('/read/control', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'start', userId: userId })
             })
-            .then(response => response.json())
+            .then(r => r.json())
             .then(data => {
                 addMessage('system', `📖 ${data.message}`);
                 isReading = true;
             })
-            .catch(error => {
-                alert('Error starting read: ' + error.message);
-            });
+            .catch(err => alert('Error starting read: ' + err.message));
         }
 
         function stopReading() {
             fetch('/read/control', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'stop', userId: userId })
             })
-            .then(response => response.json())
+            .then(r => r.json())
             .then(data => {
                 addMessage('system', `⏹️ ${data.message}`);
                 document.getElementById('readingProgress').classList.remove('active');
                 document.getElementById('fileUploadArea').classList.remove('active');
                 isReading = false;
-                if ('speechSynthesis' in window) {
-                    window.speechSynthesis.cancel();
-                }
+                if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+                if (isWaitingForNextLine) isWaitingForNextLine = false;
             })
-            .catch(error => {
-                alert('Error stopping read: ' + error.message);
-            });
+            .catch(err => alert('Error stopping read: ' + err.message));
         }
 
-        // ============================================
-        // LOGOUT
-        // ============================================
+        // ===== LOGOUT =====
         function logout() {
-            if (reconnectTimeout) {
-                clearTimeout(reconnectTimeout);
-                reconnectTimeout = null;
-            }
-            if (ws) {
-                ws.close();
-            }
+            if (reconnectTimeout) clearTimeout(reconnectTimeout);
+            if (ws) ws.close();
             document.getElementById('loginScreen').style.display = 'flex';
             document.getElementById('mainUI').style.display = 'none';
             document.getElementById('chatArea').innerHTML = '';
             document.getElementById('readingProgress').classList.remove('active');
             document.getElementById('fileUploadArea').classList.remove('active');
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-            }
-            currentUser = null;
-            userId = null;
-            token = null;
-            isReading = false;
-            reconnectAttempts = 0;
+            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+            currentUser = null; userId = null; token = null; isReading = false; reconnectAttempts = 0;
             updateStatus('offline', 'Disconnected');
         }
 
-        // ============================================
-        // EVENT LISTENERS
-        // ============================================
-        document.getElementById('commandInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                sendCommand();
-            }
-        });
-
-        document.getElementById('loginPassword').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                login(false);
-            }
-        });
-
+        // ===== EVENTS =====
+        document.getElementById('commandInput').addEventListener('keypress', e => { if (e.key === 'Enter') sendCommand(); });
+        document.getElementById('loginPassword').addEventListener('keypress', e => { if (e.key === 'Enter') login(false); });
         document.getElementById('fileInput').addEventListener('change', function(e) {
-            if (this.files.length > 0) {
-                document.getElementById('fileInfo').textContent = `📄 ${this.files[0].name}`;
-            }
+            if (this.files.length > 0) document.getElementById('fileInfo').textContent = `📄 ${this.files[0].name}`;
         });
-
-        // Load voices for speech synthesis
         if ('speechSynthesis' in window) {
             window.speechSynthesis.getVoices();
-            window.speechSynthesis.onvoiceschanged = () => {
-                window.speechSynthesis.getVoices();
-            };
+            window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
         }
 
-        // ============================================
-        // INITIALIZATION
-        // ============================================
+        // Pre-fill admin
         document.getElementById('loginUsername').value = 'blessed';
         document.getElementById('loginPassword').value = 'emmanuel';
-
-        console.log('🚀 Bot Web Service loaded');
-        console.log('💡 Login with: blessed / emmanuel');
-        console.log('📝 Or register a new account');
+        console.log('🚀 Bot Web Service loaded – device ID:', deviceId);
     </script>
 </body>
 </html>
