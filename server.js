@@ -1,4 +1,4 @@
-// server.js - COMPLETE WITH .TRACE COMMAND
+// server.js - FINAL with .me broadcast fix & .system command
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
@@ -16,34 +16,26 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
-// Log environment variables status
 console.log('\n🔍 Environment Check:');
 console.log(`🌤️ WEATHER_API_KEY: ${process.env.WEATHER_API_KEY ? '✅ Set' : '❌ Missing'}`);
 console.log(`📰 NEWS_API_KEY: ${process.env.NEWS_API_KEY ? '✅ Set' : '❌ Missing'}`);
 console.log(`🔑 JWT_SECRET: ${process.env.JWT_SECRET ? '✅ Set' : '❌ Missing'}`);
 console.log(`📁 DB_PATH: ${process.env.DB_PATH || '/tmp/data'}\n`);
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-// Database file paths
+// ---- Database ----
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'data');
 const USERS_FILE = path.join(DB_PATH, 'users.json');
 const TRIALS_FILE = path.join(DB_PATH, 'trials.json');
 const MESSAGES_FILE = path.join(DB_PATH, 'messages.json');
 const DOWNLOADS_PATH = path.join(DB_PATH, 'downloads');
 
-// Ensure directories exist
-if (!fs.existsSync(DB_PATH)) {
-    fs.mkdirSync(DB_PATH, { recursive: true });
-}
-if (!fs.existsSync(DOWNLOADS_PATH)) {
-    fs.mkdirSync(DOWNLOADS_PATH, { recursive: true });
-}
+if (!fs.existsSync(DB_PATH)) fs.mkdirSync(DB_PATH, { recursive: true });
+if (!fs.existsSync(DOWNLOADS_PATH)) fs.mkdirSync(DOWNLOADS_PATH, { recursive: true });
 
-// Initialize database
 function initDB() {
     try {
         if (!fs.existsSync(USERS_FILE)) {
@@ -52,18 +44,17 @@ function initDB() {
                     username: 'blessed',
                     password: bcrypt.hashSync('emmanuel', 10),
                     role: 'admin',
-                    created: new Date().toISOString()
+                    created: new Date().toISOString(),
+                    deviceId: null
                 }
             };
             fs.writeFileSync(USERS_FILE, JSON.stringify(defaultUsers, null, 2));
             console.log('✅ Users database initialized');
         }
-
         if (!fs.existsSync(TRIALS_FILE)) {
             fs.writeFileSync(TRIALS_FILE, JSON.stringify({}, null, 2));
             console.log('✅ Trials database initialized');
         }
-
         if (!fs.existsSync(MESSAGES_FILE)) {
             fs.writeFileSync(MESSAGES_FILE, JSON.stringify([], null, 2));
             console.log('✅ Messages database initialized');
@@ -72,105 +63,59 @@ function initDB() {
         console.error('❌ Database initialization error:', error);
     }
 }
-
 initDB();
 
-// Configure multer for file uploads
+// ---- Multer ----
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         const uploadDir = path.join(__dirname, 'uploads');
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
-        }
+        if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
         cb(null, uploadDir);
     },
     filename: (req, file, cb) => {
         cb(null, `doc_${Date.now()}_${file.originalname}`);
     }
 });
+const upload = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 } });
 
-const upload = multer({
-    storage: storage,
-    limits: { fileSize: 50 * 1024 * 1024 }
-});
-
-// Store connected clients
+// ---- In-memory stores ----
 const clients = new Map();
+const readingStates = {};
 
-// User management functions
+// ---- DB helpers ----
 function getUsers() {
-    try {
-        return JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
-    } catch (error) {
-        console.error('Error reading users:', error);
-        return { admin: { username: 'blessed', password: bcrypt.hashSync('emmanuel', 10), role: 'admin' } };
-    }
+    try { return JSON.parse(fs.readFileSync(USERS_FILE, 'utf8')); } catch { return { admin: { username: 'blessed', password: bcrypt.hashSync('emmanuel', 10), role: 'admin', deviceId: null } }; }
 }
-
-function saveUsers(users) {
-    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
-}
-
+function saveUsers(users) { fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2)); }
 function getTrials() {
-    try {
-        return JSON.parse(fs.readFileSync(TRIALS_FILE, 'utf8'));
-    } catch (error) {
-        return {};
-    }
+    try { return JSON.parse(fs.readFileSync(TRIALS_FILE, 'utf8')); } catch { return {}; }
 }
-
-function saveTrials(trials) {
-    fs.writeFileSync(TRIALS_FILE, JSON.stringify(trials, null, 2));
-}
-
+function saveTrials(trials) { fs.writeFileSync(TRIALS_FILE, JSON.stringify(trials, null, 2)); }
 function getMessages() {
-    try {
-        return JSON.parse(fs.readFileSync(MESSAGES_FILE, 'utf8'));
-    } catch (error) {
-        return [];
-    }
+    try { return JSON.parse(fs.readFileSync(MESSAGES_FILE, 'utf8')); } catch { return []; }
 }
-
-function saveMessages(messages) {
-    fs.writeFileSync(MESSAGES_FILE, JSON.stringify(messages, null, 2));
-}
+function saveMessages(messages) { fs.writeFileSync(MESSAGES_FILE, JSON.stringify(messages, null, 2)); }
 
 function generateUserId() {
     const users = getUsers();
-    const userIds = Object.keys(users).filter(key => key !== 'admin');
-    if (userIds.length === 0) return 'USER001';
-    
-    const maxId = userIds.reduce((max, id) => {
-        const num = parseInt(id.replace('USER', ''));
-        return num > max ? num : max;
-    }, 0);
-    
-    return `USER${String(maxId + 1).padStart(3, '0')}`;
+    const ids = Object.keys(users).filter(k => k !== 'admin');
+    if (ids.length === 0) return 'USER001';
+    const max = ids.reduce((a, id) => Math.max(a, parseInt(id.replace('USER', ''))), 0);
+    return `USER${String(max + 1).padStart(3, '0')}`;
 }
-
 function getUserTrials(userId) {
     const trials = getTrials();
     return trials[userId] || { used: 0, total: 5, expiry: null };
 }
-
 function hasTrialAvailable(userId) {
-    const userTrials = getUserTrials(userId);
-    if (userTrials.expiry) {
-        return new Date(userTrials.expiry) > new Date();
-    }
-    return userTrials.used < userTrials.total;
+    const t = getUserTrials(userId);
+    if (t.expiry) return new Date(t.expiry) > new Date();
+    return t.used < t.total;
 }
-
 function useTrial(userId) {
     const trials = getTrials();
-    if (!trials[userId]) {
-        trials[userId] = { used: 0, total: 5, expiry: null };
-    }
-    
-    if (trials[userId].expiry) {
-        return true;
-    }
-    
+    if (!trials[userId]) trials[userId] = { used: 0, total: 5, expiry: null };
+    if (trials[userId].expiry) return true;
     if (trials[userId].used < trials[userId].total) {
         trials[userId].used++;
         saveTrials(trials);
@@ -179,35 +124,23 @@ function useTrial(userId) {
     return false;
 }
 
-// WebSocket connection handling with improved reconnection
+// ---- WebSocket ----
 wss.on('connection', (ws, req) => {
     let userId = null;
     let authenticated = false;
-    let pingInterval = null;
-    
-    // Ping/pong to keep connection alive
-    pingInterval = setInterval(() => {
-        if (ws.readyState === WebSocket.OPEN) {
-            ws.ping();
-        }
-    }, 30000);
-    
-    ws.on('pong', () => {
-        // Connection is alive
-    });
-    
+    let pingInterval = setInterval(() => { if (ws.readyState === WebSocket.OPEN) ws.ping(); }, 30000);
+    ws.on('pong', () => {});
+
     ws.on('message', async (message) => {
         try {
             const data = JSON.parse(message);
-            
+
             if (data.type === 'auth') {
-                const { username, password, isNewUser } = data;
+                const { username, password, isNewUser, deviceId } = data;
                 const users = getUsers();
-                
-                let foundUser = null;
-                let foundUserId = null;
-                
-                // Check if trying to register as admin
+                let foundUser = null, foundUserId = null;
+
+                // Admin login
                 if (username === 'blessed') {
                     const isValid = bcrypt.compareSync(password, users.admin.password);
                     if (isValid) {
@@ -215,14 +148,11 @@ wss.on('connection', (ws, req) => {
                         foundUserId = 'admin';
                         foundUser.role = 'admin';
                     } else {
-                        ws.send(JSON.stringify({
-                            type: 'auth_failed',
-                            data: 'Invalid admin credentials'
-                        }));
+                        ws.send(JSON.stringify({ type: 'auth_failed', data: 'Invalid admin credentials' }));
                         return;
                     }
                 } else {
-                    // Check if user exists
+                    // Existing user
                     for (const [id, user] of Object.entries(users)) {
                         if (user.username === username && id !== 'admin') {
                             const isValid = bcrypt.compareSync(password, user.password);
@@ -233,288 +163,222 @@ wss.on('connection', (ws, req) => {
                             }
                         }
                     }
-                    
-                    // If user doesn't exist and isNewUser is true, create new account
+
+                    // Registration
                     if (!foundUser && isNewUser) {
+                        // Check device
+                        const existingDevice = Object.entries(users).find(([id, u]) => u.deviceId === deviceId && id !== 'admin');
+                        if (existingDevice) {
+                            ws.send(JSON.stringify({
+                                type: 'auth_failed',
+                                data: '❌ This device already has an account. Please login with your existing credentials.'
+                            }));
+                            return;
+                        }
+                        // Create user
                         const newUserId = generateUserId();
                         const hashedPassword = bcrypt.hashSync(password, 10);
                         const newUser = {
-                            username: username,
+                            username,
                             password: hashedPassword,
                             role: 'user',
-                            created: new Date().toISOString()
+                            created: new Date().toISOString(),
+                            deviceId
                         };
                         users[newUserId] = newUser;
                         saveUsers(users);
-                        
-                        // Initialize trials for new user
                         const trials = getTrials();
                         trials[newUserId] = { used: 0, total: 5, expiry: null };
                         saveTrials(trials);
-                        
                         foundUser = newUser;
                         foundUserId = newUserId;
                     }
                 }
-                
+
                 if (foundUser && foundUserId) {
                     userId = foundUserId;
                     authenticated = true;
-                    
                     const token = jwt.sign(
                         { userId, username: foundUser.username, role: foundUser.role || 'user' },
                         process.env.JWT_SECRET || 'your-secret-key',
                         { expiresIn: '24h' }
                     );
-                    
                     clients.set(userId, { ws, user: foundUser, token, pingInterval });
-                    
+
+                    if (!foundUser.deviceId && deviceId && userId !== 'admin') {
+                        users[userId].deviceId = deviceId;
+                        saveUsers(users);
+                    }
+
                     ws.send(JSON.stringify({
                         type: 'auth_success',
                         data: {
-                            userId: userId,
+                            userId,
                             username: foundUser.username,
                             role: foundUser.role || 'user',
-                            token: token,
+                            token,
                             trials: getUserTrials(userId),
-                            isNewUser: !foundUser.created
+                            isNewUser: !foundUser.created || false
                         }
                     }));
-                    
-                    // Notify admin about new user
+
                     if (userId !== 'admin') {
                         const adminWs = clients.get('admin');
                         if (adminWs) {
                             adminWs.ws.send(JSON.stringify({
                                 type: 'user_login',
-                                data: {
-                                    userId: userId,
-                                    username: foundUser.username,
-                                    time: new Date().toISOString(),
-                                    isNew: !foundUser.created
-                                }
+                                data: { userId, username: foundUser.username, time: new Date().toISOString(), isNew: !foundUser.created }
                             }));
                         }
                     }
-                    
-                    // Send message history with files
                     const messages = getMessages();
-                    messages.forEach(msg => {
-                        ws.send(JSON.stringify({
-                            type: 'history',
-                            data: msg
-                        }));
-                    });
+                    messages.forEach(msg => ws.send(JSON.stringify({ type: 'history', data: msg })));
                 } else {
-                    ws.send(JSON.stringify({
-                        type: 'auth_failed',
-                        data: 'Invalid credentials. Please try again or register.'
-                    }));
+                    ws.send(JSON.stringify({ type: 'auth_failed', data: 'Invalid credentials.' }));
                 }
                 return;
             }
-            
+
+            // next_line for reading
+            if (data.type === 'next_line') {
+                if (readingStates[userId] && readingStates[userId].active) {
+                    readNextLine(userId);
+                }
+                return;
+            }
+
             if (!authenticated || !userId) {
+                ws.send(JSON.stringify({ type: 'error', data: 'Please authenticate first' }));
+                return;
+            }
+            if (userId !== 'admin' && !hasTrialAvailable(userId)) {
                 ws.send(JSON.stringify({
-                    type: 'error',
-                    data: 'Please authenticate first'
+                    type: 'trial_expired',
+                    data: {
+                        message: 'You have used all your free trials. Please upgrade.',
+                        upgradeInfo: {
+                            price: 'K500',
+                            methods: [
+                                { provider: 'TNM Mpamba', number: '0891011842' },
+                                { provider: 'Airtel Money', number: '0985280353' }
+                            ],
+                            adminWhatsApp: '0899128441'
+                        }
+                    }
                 }));
                 return;
             }
-            
-            // Check trials for non-admin users
-            if (userId !== 'admin') {
-                if (!hasTrialAvailable(userId)) {
-                    ws.send(JSON.stringify({
-                        type: 'trial_expired',
-                        data: {
-                            message: 'You have used all your free trials. Please upgrade to continue.',
-                            upgradeInfo: {
-                                price: 'K500',
-                                methods: [
-                                    { provider: 'TNM Mpamba', number: '0891011842' },
-                                    { provider: 'Airtel Money', number: '0985280353' }
-                                ],
-                                adminWhatsApp: '0899128441'
-                            }
-                        }
-                    }));
-                    return;
-                }
-            }
-            
+
             await handleCommand(data.command, data.args, ws, userId);
-            
-            if (userId !== 'admin' && !['.myid', '.assist', '.developer', '.upgrade', '.trials'].includes(data.command)) {
+            if (userId !== 'admin' && !['.myid', '.assist', '.developer', '.upgrade', '.trials', '.deviceid', '.system'].includes(data.command)) {
                 useTrial(userId);
             }
-            
+
         } catch (error) {
             console.error('Error processing message:', error);
-            ws.send(JSON.stringify({
-                type: 'error',
-                data: 'Error processing request'
-            }));
+            ws.send(JSON.stringify({ type: 'error', data: 'Error processing request' }));
         }
     });
-    
+
     ws.on('close', () => {
-        if (pingInterval) {
-            clearInterval(pingInterval);
-        }
+        clearInterval(pingInterval);
         if (userId) {
             clients.delete(userId);
+            delete readingStates[userId];
             console.log(`User ${userId} disconnected`);
         }
     });
 });
 
-// Command handlers
+// ============================================================
+// COMMAND HANDLERS
+// ============================================================
 async function handleCommand(command, args, ws, userId) {
-    switch(command) {
-        case '.myid':
-            handleMyId(ws, userId);
-            break;
-        case '.weather':
-            await handleWeather(args, ws);
-            break;
-        case '.news':
-            await handleNews(args, ws);
-            break;
-        case '.read':
-            handleRead(ws);
-            break;
-        case '.me':
-            handleMe(args, ws, userId);
-            break;
-        case '.assist':
-            handleAssist(ws, userId);
-            break;
-        case '.developer':
-            handleDeveloper(ws);
-            break;
-        case '.tune':
-            await handleTune(args, ws);
-            break;
-        case '.shot':
-            await handleShot(args, ws, userId);
-            break;
-        case '.trace':
-            await handleTrace(args, ws);
-            break;
-        case '.upgrade':
-            await handleUpgrade(args, ws, userId);
-            break;
-        case '.trials':
-            handleTrials(ws, userId);
-            break;
+    switch (command) {
+        case '.myid': handleMyId(ws, userId); break;
+        case '.deviceid': handleDeviceId(ws, userId); break;
+        case '.weather': await handleWeather(args, ws); break;
+        case '.news': await handleNews(args, ws); break;
+        case '.read': handleRead(ws); break;
+        case '.me': handleMe(args, ws, userId); break;
+        case '.system': await handleSystem(args, ws, userId); break;
+        case '.assist': handleAssist(ws, userId); break;
+        case '.developer': handleDeveloper(ws); break;
+        case '.tune': await handleTune(args, ws); break;
+        case '.shot': await handleShot(args, ws, userId); break;
+        case '.trace': await handleTrace(args, ws); break;
+        case '.upgrade': await handleUpgrade(args, ws, userId); break;
+        case '.trials': handleTrials(ws, userId); break;
         default:
-            ws.send(JSON.stringify({
-                type: 'error',
-                data: 'Unknown command. Type .assist for help'
-            }));
+            ws.send(JSON.stringify({ type: 'error', data: 'Unknown command. Type .assist for help' }));
     }
 }
 
+// ---- .myid ----
 function handleMyId(ws, userId) {
     const users = getUsers();
     const user = users[userId];
     const trials = getUserTrials(userId);
-    
     ws.send(JSON.stringify({
         type: 'myid',
         data: {
-            userId: userId,
+            userId,
             username: user ? user.username : 'Unknown',
             role: user ? user.role : 'user',
-            trials: trials,
+            trials,
             isPremium: trials.expiry ? new Date(trials.expiry) > new Date() : false
         }
     }));
 }
 
-// ============================================
-// 🌤️ WEATHER HANDLER
-// ============================================
+// ---- .deviceid ----
+function handleDeviceId(ws, userId) {
+    const users = getUsers();
+    const user = users[userId];
+    ws.send(JSON.stringify({
+        type: 'deviceid',
+        data: {
+            deviceId: user?.deviceId || 'Not set',
+            message: 'This is your device identifier. It prevents multiple accounts on the same device.'
+        }
+    }));
+}
+
+// ---- .weather ----
 async function handleWeather(args, ws) {
     const city = args || 'Lilongwe';
-    
     try {
         let apiKey = process.env.WEATHER_API_KEY;
-        
         if (!apiKey || apiKey === 'your_openweather_api_key_here') {
-            try {
-                const envPath = path.join(__dirname, '.env');
-                if (fs.existsSync(envPath)) {
-                    const envContent = fs.readFileSync(envPath, 'utf8');
-                    const match = envContent.match(/WEATHER_API_KEY=(.+)/);
-                    if (match && match[1]) {
-                        apiKey = match[1].trim();
-                    }
-                }
-            } catch (err) {
-                console.log('Could not read .env file for weather key');
-            }
-        }
-        
-        if (!apiKey || apiKey === 'your_openweather_api_key_here' || apiKey === 'your_actual_openweather_api_key_here') {
-            console.log('⚠️ No valid Weather API key found, using mock data');
-            const mockForecast = generateMockWeather(city);
-            ws.send(JSON.stringify({
-                type: 'weather',
-                data: {
-                    city: city,
-                    forecast: mockForecast,
-                    note: '⚠️ Using sample data. Please add your OpenWeatherMap API key to .env file.'
-                }
-            }));
+            const mock = generateMockWeather(city);
+            ws.send(JSON.stringify({ type: 'weather', data: { city, forecast: mock, note: '⚠️ Using sample data.' } }));
             return;
         }
-        
-        console.log(`🌤️ Fetching weather for ${city}...`);
         const response = await axios.get(
             `https://api.openweathermap.org/data/2.5/forecast?q=${city}&units=metric&appid=${apiKey}&cnt=40`,
             { timeout: 10000 }
         );
-        
-        // Group forecasts by day
         const dailyForecasts = {};
         response.data.list.forEach(item => {
             const date = new Date(item.dt * 1000);
-            const dateKey = date.toDateString();
-            
-            if (!dailyForecasts[dateKey]) {
-                dailyForecasts[dateKey] = {
-                    date: date,
-                    temps: [],
-                    descriptions: [],
-                    humidities: [],
-                    icons: [],
-                    windSpeeds: [],
-                    feelsLike: []
-                };
+            const key = date.toDateString();
+            if (!dailyForecasts[key]) {
+                dailyForecasts[key] = { date, temps: [], descriptions: [], humidities: [], icons: [], windSpeeds: [], feelsLike: [] };
             }
-            
-            dailyForecasts[dateKey].temps.push(item.main.temp);
-            dailyForecasts[dateKey].descriptions.push(item.weather[0].description);
-            dailyForecasts[dateKey].humidities.push(item.main.humidity);
-            dailyForecasts[dateKey].icons.push(item.weather[0].icon);
-            dailyForecasts[dateKey].windSpeeds.push(item.wind.speed);
-            dailyForecasts[dateKey].feelsLike.push(item.main.feels_like);
+            dailyForecasts[key].temps.push(item.main.temp);
+            dailyForecasts[key].descriptions.push(item.weather[0].description);
+            dailyForecasts[key].humidities.push(item.main.humidity);
+            dailyForecasts[key].icons.push(item.weather[0].icon);
+            dailyForecasts[key].windSpeeds.push(item.wind.speed);
+            dailyForecasts[key].feelsLike.push(item.main.feels_like);
         });
-        
-        // Process each day's data
         const forecast = Object.values(dailyForecasts).slice(0, 5).map(day => {
-            // Get most common description
             const descCount = {};
             day.descriptions.forEach(d => descCount[d] = (descCount[d] || 0) + 1);
             const mainDesc = Object.keys(descCount).reduce((a, b) => descCount[a] > descCount[b] ? a : b);
-            
-            // Get most common icon
             const iconCount = {};
             day.icons.forEach(i => iconCount[i] = (iconCount[i] || 0) + 1);
             const mainIcon = Object.keys(iconCount).reduce((a, b) => iconCount[a] > iconCount[b] ? a : b);
-            
             return {
                 date: day.date,
                 temp_min: Math.round(Math.min(...day.temps)),
@@ -527,30 +391,12 @@ async function handleWeather(args, ws) {
                 feelsLike: Math.round(day.feelsLike.reduce((a, b) => a + b, 0) / day.feelsLike.length)
             };
         });
-        
-        ws.send(JSON.stringify({
-            type: 'weather',
-            data: {
-                city: response.data.city.name,
-                country: response.data.city.country,
-                forecast: forecast
-            }
-        }));
-        
+        ws.send(JSON.stringify({ type: 'weather', data: { city: response.data.city.name, country: response.data.city.country, forecast } }));
     } catch (error) {
-        console.error('Weather API Error:', error.message);
-        const mockForecast = generateMockWeather(city);
-        ws.send(JSON.stringify({
-            type: 'weather',
-            data: {
-                city: city,
-                forecast: mockForecast,
-                note: `⚠️ Using sample data. API Error: ${error.message}`
-            }
-        }));
+        const mock = generateMockWeather(city);
+        ws.send(JSON.stringify({ type: 'weather', data: { city, forecast: mock, note: `⚠️ API error: ${error.message}` } }));
     }
 }
-
 function generateMockWeather(city) {
     const conditions = [
         { desc: '☀️ Sunny', icon: '01d' },
@@ -568,7 +414,7 @@ function generateMockWeather(city) {
         date.setDate(date.getDate() + i);
         const condition = conditions[Math.floor(Math.random() * conditions.length)];
         return {
-            date: date,
+            date,
             temp_min: Math.round(18 + Math.random() * 5),
             temp_max: Math.round(25 + Math.random() * 7),
             temp_avg: Math.round(22 + Math.random() * 5),
@@ -581,298 +427,182 @@ function generateMockWeather(city) {
     });
 }
 
-// ============================================
-// 📰 NEWS HANDLER
-// ============================================
+// ---- .news ----
 async function handleNews(args, ws) {
     const category = args || 'global';
-    
     try {
         let apiKey = process.env.NEWS_API_KEY;
-        
         if (!apiKey || apiKey === 'your_gnews_api_key_here') {
-            try {
-                const envPath = path.join(__dirname, '.env');
-                if (fs.existsSync(envPath)) {
-                    const envContent = fs.readFileSync(envPath, 'utf8');
-                    const match = envContent.match(/NEWS_API_KEY=(.+)/);
-                    if (match && match[1]) {
-                        apiKey = match[1].trim();
-                    }
-                }
-            } catch (err) {
-                console.log('Could not read .env file for news key');
-            }
-        }
-        
-        if (!apiKey || apiKey === 'your_gnews_api_key_here' || apiKey === 'your_actual_gnews_api_key_here') {
-            console.log('⚠️ No valid News API key found, using mock data');
-            const mockNews = generateMockNews(category);
-            ws.send(JSON.stringify({
-                type: 'news',
-                data: {
-                    category: category,
-                    articles: mockNews,
-                    note: '⚠️ Using sample data. Please add your GNews API key to .env file.'
-                }
-            }));
+            const mock = generateMockNews(category);
+            ws.send(JSON.stringify({ type: 'news', data: { category, articles: mock, note: '⚠️ Using sample data.' } }));
             return;
         }
-        
-        console.log(`📰 Fetching ${category} news...`);
         let url = `https://gnews.io/api/v4/top-headlines?token=${apiKey}&lang=en&max=10`;
-        
-        if (category === 'malawi') {
-            url = `https://gnews.io/api/v4/search?q=malawi&token=${apiKey}&lang=en&max=10`;
-        }
-        
+        if (category === 'malawi') url = `https://gnews.io/api/v4/search?q=malawi&token=${apiKey}&lang=en&max=10`;
         const response = await axios.get(url, { timeout: 10000 });
-        
-        const articles = response.data.articles.slice(0, 8).map(article => ({
+        const shuffled = response.data.articles.sort(() => Math.random() - 0.5);
+        const count = Math.min(4 + Math.floor(Math.random() * 5), shuffled.length);
+        const selected = shuffled.slice(0, count);
+        const articles = selected.map(article => ({
             title: article.title || 'No title',
             description: article.description || 'No description available',
-            content: article.content || article.description || 'No content available',
             source: article.source?.name || 'Unknown source',
             url: article.url || '#',
             image: article.image || null,
-            publishedAt: article.publishedAt ? new Date(article.publishedAt).toLocaleDateString('en-US', { 
-                weekday: 'short', 
-                month: 'short', 
-                day: 'numeric',
-                year: 'numeric'
-            }) : 'Recent',
+            publishedAt: article.publishedAt ? new Date(article.publishedAt).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) : 'Recent',
             author: article.author || 'Unknown'
         }));
-        
-        ws.send(JSON.stringify({
-            type: 'news',
-            data: {
-                category: category,
-                articles: articles,
-                total: articles.length
-            }
-        }));
-        
+        ws.send(JSON.stringify({ type: 'news', data: { category, articles, total: articles.length } }));
     } catch (error) {
-        console.error('News API Error:', error.message);
-        const mockNews = generateMockNews(category);
-        ws.send(JSON.stringify({
-            type: 'news',
-            data: {
-                category: category,
-                articles: mockNews,
-                note: `⚠️ Using sample data. API Error: ${error.message}`
-            }
-        }));
+        const mock = generateMockNews(category);
+        ws.send(JSON.stringify({ type: 'news', data: { category, articles: mock, note: `⚠️ API error: ${error.message}` } }));
     }
 }
-
 function generateMockNews(category) {
-    const globalNews = [
-        { 
-            title: 'Global Economy Shows Strong Recovery Signs', 
-            description: 'World markets respond positively to economic indicators as GDP growth exceeds expectations in major economies.', 
-            source: 'World News Network',
-            image: null,
-            publishedAt: new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
-            author: 'Financial Desk'
-        },
-        { 
-            title: 'Scientists Announce Clean Energy Breakthrough', 
-            description: 'Revolutionary solar technology promises to triple energy efficiency while reducing costs by 40%.', 
-            source: 'Tech Today',
-            image: null,
-            publishedAt: new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
-            author: 'Science Team'
-        },
-        { 
-            title: 'Climate Summit Yields Historic Agreement', 
-            description: 'World leaders commit to ambitious carbon reduction targets with developing nations receiving financial support.', 
-            source: 'Environment Daily',
-            image: null,
-            publishedAt: new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
-            author: 'Climate Correspondent'
-        },
-        { 
-            title: 'Healthcare Innovation Accelerates Globally', 
-            description: 'AI-powered diagnostic tools and personalized medicine are transforming patient care worldwide.', 
-            source: 'Health News',
-            image: null,
-            publishedAt: new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
-            author: 'Medical Editor'
-        }
+    const globalPool = [
+        { title: 'Global Economy Shows Strong Recovery Signs', description: 'World markets respond positively to economic indicators as GDP growth exceeds expectations in major economies.', source: 'World News Network', author: 'Financial Desk' },
+        { title: 'Scientists Announce Clean Energy Breakthrough', description: 'Revolutionary solar technology promises to triple energy efficiency while reducing costs by 40%.', source: 'Tech Today', author: 'Science Team' },
+        { title: 'Climate Summit Yields Historic Agreement', description: 'World leaders commit to ambitious carbon reduction targets with developing nations receiving financial support.', source: 'Environment Daily', author: 'Climate Correspondent' },
+        { title: 'Healthcare Innovation Accelerates Globally', description: 'AI-powered diagnostic tools and personalized medicine are transforming patient care worldwide.', source: 'Health News', author: 'Medical Editor' },
+        { title: 'Space Exploration Reaches New Milestones', description: 'NASA and private companies collaborate on lunar bases and Mars missions.', source: 'Space Today', author: 'Astronomy Desk' },
+        { title: 'Artificial Intelligence Regulation Debate Intensifies', description: 'Governments worldwide discuss frameworks to govern AI development and usage.', source: 'Tech Policy', author: 'Policy Analyst' },
+        { title: 'Global Education Reform Initiatives', description: 'UNESCO announces new programs to improve access to quality education in developing countries.', source: 'Education World', author: 'Education Correspondent' },
+        { title: 'Renewable Energy Investments Surge', description: 'Solar and wind power projects attract record investments as fossil fuel prices rise.', source: 'Energy News', author: 'Energy Reporter' }
     ];
-    
-    const malawiNews = [
-        { 
-            title: 'Malawi Agriculture Transformation Underway', 
-            description: 'New farming techniques and irrigation systems boost crop yields by 30% in central region.', 
-            source: 'Malawi Times',
-            image: null,
-            publishedAt: new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
-            author: 'Agriculture Reporter'
-        },
-        { 
-            title: 'Lake Malawi Conservation Success Story', 
-            description: 'Community-led initiatives restore fish populations and protect aquatic biodiversity in the lake.', 
-            source: 'Nature Malawi',
-            image: null,
-            publishedAt: new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
-            author: 'Environment Journalist'
-        },
-        { 
-            title: 'Digital Education Revolution in Malawi', 
-            description: 'Government partners with tech companies to provide tablets and online learning to rural schools.', 
-            source: 'Education Weekly',
-            image: null,
-            publishedAt: new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
-            author: 'Education Desk'
-        },
-        { 
-            title: 'Malawi Infrastructure Development Accelerates', 
-            description: 'New road networks and renewable energy projects create thousands of jobs and improve connectivity.', 
-            source: 'Malawi Development',
-            image: null,
-            publishedAt: new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
-            author: 'Development Correspondent'
-        }
+    const malawiPool = [
+        { title: 'Malawi Agriculture Transformation Underway', description: 'New farming techniques and irrigation systems boost crop yields by 30% in central region.', source: 'Malawi Times', author: 'Agriculture Reporter' },
+        { title: 'Lake Malawi Conservation Success Story', description: 'Community-led initiatives restore fish populations and protect aquatic biodiversity in the lake.', source: 'Nature Malawi', author: 'Environment Journalist' },
+        { title: 'Digital Education Revolution in Malawi', description: 'Government partners with tech companies to provide tablets and online learning to rural schools.', source: 'Education Weekly', author: 'Education Desk' },
+        { title: 'Malawi Infrastructure Development Accelerates', description: 'New road networks and renewable energy projects create thousands of jobs and improve connectivity.', source: 'Malawi Development', author: 'Development Correspondent' },
+        { title: 'Malawi Tourism Industry Bounces Back', description: 'Lake Malawi and wildlife reserves attract more international visitors after pandemic slowdown.', source: 'Travel Malawi', author: 'Tourism Writer' },
+        { title: 'Malawi Health Sector Receives Funding Boost', description: 'International donors pledge $50 million to improve healthcare facilities and training.', source: 'Health Malawi', author: 'Health Editor' },
+        { title: 'Malawi Youth Entrepreneurship Program Launched', description: 'New initiative provides grants and mentorship to young entrepreneurs in tech and agriculture.', source: 'Business Malawi', author: 'Business Reporter' },
+        { title: 'Malawi President Announces New Education Policy', description: 'Reforms aim to increase access to secondary education and vocational training.', source: 'Malawi News', author: 'Political Correspondent' }
     ];
-    
-    return category === 'malawi' ? malawiNews : globalNews;
+    const pool = category === 'malawi' ? malawiPool : globalPool;
+    const shuffled = pool.sort(() => Math.random() - 0.5);
+    const count = Math.min(4 + Math.floor(Math.random() * 3), shuffled.length);
+    const selected = shuffled.slice(0, count);
+    const today = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    return selected.map(article => ({ ...article, image: null, publishedAt: today }));
 }
 
-// ============================================
-// 📄 READ COMMAND HANDLER
-// ============================================
+// ---- .read ----
 function handleRead(ws) {
-    ws.send(JSON.stringify({
-        type: 'read_prompt',
-        data: '📄 Please upload a PDF or text document to read aloud'
-    }));
+    ws.send(JSON.stringify({ type: 'read_prompt', data: '📄 Please upload a PDF or text document to read aloud' }));
 }
-
 app.post('/upload', upload.single('file'), (req, res) => {
-    if (!req.file) {
-        return res.status(400).json({ error: 'No file uploaded' });
-    }
-    
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
     const filePath = req.file.path;
     const fileExt = path.extname(req.file.originalname).toLowerCase();
-    
     let content = '';
-    
     if (fileExt === '.txt') {
-        try {
-            content = fs.readFileSync(filePath, 'utf8');
-        } catch (error) {
-            content = `Error reading file: ${error.message}`;
-        }
+        try { content = fs.readFileSync(filePath, 'utf8'); } catch (e) { content = `Error reading file: ${e.message}`; }
     } else {
         content = `📄 Document: ${req.file.originalname}\nFile type: ${fileExt}\nFile size: ${(req.file.size / 1024).toFixed(2)} KB`;
     }
-    
     const lines = content.split('\n');
-    
     global.readFile = {
-        lines: lines,
+        lines,
         currentIndex: 0,
-        filePath: filePath,
+        filePath,
         filename: req.file.originalname,
         totalLines: lines.length
     };
-    
-    res.json({
-        message: `📄 File "${req.file.originalname}" uploaded successfully. Starting to read aloud...`,
-        totalLines: lines.length
-    });
+    res.json({ message: `📄 File "${req.file.originalname}" uploaded successfully. Starting to read aloud...`, totalLines: lines.length });
 });
-
 app.post('/read/control', (req, res) => {
     const { action, userId } = req.body;
-    
     if (action === 'start') {
-        if (!global.readFile) {
-            return res.status(400).json({ error: 'No file uploaded. Please upload a document first.' });
-        }
-        
-        global.readingActive = true;
+        if (!global.readFile) return res.status(400).json({ error: 'No file uploaded.' });
+        readingStates[userId] = {
+            active: true,
+            lines: global.readFile.lines,
+            currentIndex: 0,
+            filename: global.readFile.filename
+        };
         readNextLine(userId);
         res.json({ message: '📖 Started reading document aloud' });
     } else if (action === 'stop') {
-        global.readingActive = false;
-        if (global.readTimeout) {
-            clearTimeout(global.readTimeout);
-            global.readTimeout = null;
+        if (readingStates[userId]) {
+            readingStates[userId].active = false;
+            delete readingStates[userId];
         }
         res.json({ message: '⏹️ Stopped reading' });
     }
 });
-
 function readNextLine(userId) {
-    if (!global.readingActive || !global.readFile) return;
-    
-    const file = global.readFile;
-    if (file.currentIndex < file.lines.length) {
-        const line = file.lines[file.currentIndex];
-        file.currentIndex++;
-        
+    const state = readingStates[userId];
+    if (!state || !state.active) return;
+    if (state.currentIndex >= state.lines.length) {
+        state.active = false;
         const client = clients.get(userId);
         if (client && client.ws.readyState === WebSocket.OPEN) {
-            client.ws.send(JSON.stringify({
-                type: 'read_line',
-                data: {
-                    lineNumber: file.currentIndex,
-                    totalLines: file.lines.length,
-                    content: line || ' ',
-                    filename: file.filename
-                }
-            }));
+            client.ws.send(JSON.stringify({ type: 'read_complete', data: '✅ Finished reading the entire document' }));
         }
-        
-        global.readTimeout = setTimeout(() => readNextLine(userId), 1500);
-    } else {
-        global.readingActive = false;
-        const client = clients.get(userId);
-        if (client && client.ws.readyState === WebSocket.OPEN) {
-            client.ws.send(JSON.stringify({
-                type: 'read_complete',
-                data: '✅ Finished reading the entire document'
-            }));
-        }
+        return;
+    }
+    const line = state.lines[state.currentIndex++];
+    const client = clients.get(userId);
+    if (client && client.ws.readyState === WebSocket.OPEN) {
+        client.ws.send(JSON.stringify({
+            type: 'read_line',
+            data: { lineNumber: state.currentIndex, totalLines: state.lines.length, content: line || ' ', filename: state.filename }
+        }));
     }
 }
 
-// ============================================
-// 💬 PUBLIC MESSAGE HANDLER
-// ============================================
+// ---- .me (fixed broadcast) ----
 function handleMe(args, ws, userId) {
     const message = args || 'Hello everyone!';
     const users = getUsers();
     const user = users[userId];
-    
     const publicMessage = {
-        userId: userId,
+        userId,
         username: user ? user.username : 'Unknown',
-        message: message,
+        message,
         timestamp: new Date().toISOString(),
         type: 'text'
     };
-    
     const messages = getMessages();
     messages.push(publicMessage);
     saveMessages(messages);
-    
+
+    // Broadcast to ALL connected clients (including sender)
     broadcastMessage(null, publicMessage);
-    
-    ws.send(JSON.stringify({
-        type: 'confirm',
-        data: '✅ Message sent to everyone'
-    }));
+
+    // Optional: send a confirmation to the sender (already handled by broadcast)
+    ws.send(JSON.stringify({ type: 'confirm', data: '✅ Message sent to everyone' }));
 }
 
+// ---- .system (admin broadcast) ----
+async function handleSystem(args, ws, userId) {
+    const users = getUsers();
+    const user = users[userId];
+    if (!user || user.role !== 'admin') {
+        ws.send(JSON.stringify({ type: 'error', data: '❌ Admin only command.' }));
+        return;
+    }
+    if (!args) {
+        ws.send(JSON.stringify({ type: 'error', data: 'Usage: .system <message>' }));
+        return;
+    }
+    const systemMessage = {
+        type: 'system_broadcast',
+        message: args,
+        timestamp: new Date().toISOString(),
+        sender: 'Admin'
+    };
+    // Broadcast to all
+    broadcastMessage(null, systemMessage);
+    ws.send(JSON.stringify({ type: 'confirm', data: '✅ System message sent to all users.' }));
+}
+
+// ---- .assist ----
 function handleAssist(ws, userId) {
     const commands = [
         { command: '.myid', description: 'Show your unique user ID and trial status' },
+        { command: '.deviceid', description: 'Show your device identifier' },
         { command: '.weather [city]', description: 'Predict next 5 days weather (default: Lilongwe)' },
         { command: '.news [global/malawi]', description: 'Show trending global or Malawi news' },
         { command: '.read', description: 'Upload and read document aloud line by line' },
@@ -884,23 +614,17 @@ function handleAssist(ws, userId) {
         { command: '.trace [ip/domain]', description: 'Trace IP address or domain location (leave empty for your own IP)' },
         { command: '.trials', description: 'Check your remaining free trials' }
     ];
-    
     const users = getUsers();
     if (users[userId] && users[userId].role === 'admin') {
         commands.push({ command: '.upgrade [userID] [days]', description: 'Upgrade a user to premium (Admin only)' });
+        commands.push({ command: '.system <message>', description: 'Send a system-wide announcement (Admin only)' });
     }
-    
     let helpText = '🤖 Available Commands:\n\n';
-    commands.forEach(cmd => {
-        helpText += `📌 ${cmd.command}\n   ${cmd.description}\n\n`;
-    });
-    
-    ws.send(JSON.stringify({
-        type: 'help',
-        data: helpText
-    }));
+    commands.forEach(cmd => helpText += `📌 ${cmd.command}\n   ${cmd.description}\n\n`);
+    ws.send(JSON.stringify({ type: 'help', data: helpText }));
 }
 
+// ---- .developer ----
 function handleDeveloper(ws) {
     const info = {
         name: 'Emmanuel Chimombo',
@@ -909,208 +633,101 @@ function handleDeveloper(ws) {
         year: 'Current Student',
         skills: ['Web Development', 'Bot Development', 'AI Integration']
     };
-    
-    ws.send(JSON.stringify({
-        type: 'developer',
-        data: info
-    }));
+    ws.send(JSON.stringify({ type: 'developer', data: info }));
 }
 
-// ============================================
-// 🔄 TUNE COMMAND HANDLER
-// ============================================
+// ---- .tune ----
 async function handleTune(args, ws) {
     if (!args) {
-        ws.send(JSON.stringify({
-            type: 'error',
-            data: 'Please provide text to tune. Example: .tune "Your AI-generated text here"'
-        }));
+        ws.send(JSON.stringify({ type: 'error', data: 'Please provide text to tune.' }));
         return;
     }
-    
     try {
-        const humanizedText = humanizeText(args);
-        
-        ws.send(JSON.stringify({
-            type: 'tune',
-            data: {
-                original: args,
-                humanized: humanizedText
-            }
-        }));
+        const humanized = humanizeText(args);
+        ws.send(JSON.stringify({ type: 'tune', data: { original: args, humanized } }));
     } catch (error) {
-        ws.send(JSON.stringify({
-            type: 'error',
-            data: 'Error tuning text. Please try again.'
-        }));
+        ws.send(JSON.stringify({ type: 'error', data: 'Error tuning text.' }));
     }
 }
-
 function humanizeText(text) {
-    let humanized = text;
-    humanized = humanized.replace(/in conclusion/gi, '');
-    humanized = humanized.replace(/furthermore/gi, '');
-    humanized = humanized.replace(/additionally/gi, '');
-    humanized = humanized.replace(/it is important to note that/gi, '');
-    humanized = humanized.replace(/AI/gi, 'technology');
-    humanized = humanized.replace(/machine learning/gi, 'smart algorithms');
-    humanized = humanized.replace(/do not/g, 'don\'t');
-    humanized = humanized.replace(/cannot/g, 'can\'t');
-    humanized = humanized.replace(/will not/g, 'won\'t');
-    humanized = humanized.replace(/is not/g, 'isn\'t');
-    humanized = humanized.replace(/are not/g, 'aren\'t');
-    return humanized;
+    let h = text;
+    h = h.replace(/in conclusion/gi, '');
+    h = h.replace(/furthermore/gi, '');
+    h = h.replace(/additionally/gi, '');
+    h = h.replace(/it is important to note that/gi, '');
+    h = h.replace(/AI/gi, 'technology');
+    h = h.replace(/machine learning/gi, 'smart algorithms');
+    h = h.replace(/do not/g, 'don\'t');
+    h = h.replace(/cannot/g, 'can\'t');
+    h = h.replace(/will not/g, 'won\'t');
+    h = h.replace(/is not/g, 'isn\'t');
+    h = h.replace(/are not/g, 'aren\'t');
+    return h;
 }
 
-// ============================================
-// 🎬 .SHOT COMMAND - Provides Download Links
-// ============================================
+// ---- .shot ----
 async function handleShot(args, ws, userId) {
-    // Validate URL
     if (!args || !args.startsWith('http')) {
-        ws.send(JSON.stringify({
-            type: 'error',
-            data: '❌ Please provide a valid Facebook video link.\nExample: .shot https://www.facebook.com/.../videos/...'
-        }));
+        ws.send(JSON.stringify({ type: 'error', data: '❌ Please provide a valid Facebook video link.' }));
         return;
     }
-    
-    // Check if it's a Facebook URL
     if (!args.includes('facebook.com') && !args.includes('fb.watch')) {
-        ws.send(JSON.stringify({
-            type: 'error',
-            data: '❌ Please provide a valid Facebook video link only.'
-        }));
+        ws.send(JSON.stringify({ type: 'error', data: '❌ Please provide a valid Facebook video link only.' }));
         return;
     }
-    
-    ws.send(JSON.stringify({
-        type: 'shot_progress',
-        data: '⏳ Processing Facebook video link...'
-    }));
-    
+    ws.send(JSON.stringify({ type: 'shot_progress', data: '⏳ Processing Facebook video link...' }));
     try {
-        console.log(`📹 Processing Facebook video: ${args}`);
-        
-        // Extract video ID from various Facebook URL formats
         let videoId = null;
         let videoUrl = args;
-        
-        // Try different patterns to extract video ID
-        const patterns = [
-            /\/videos\/(\d+)/,
-            /\/watch\?v=(\d+)/,
-            /\/share\/v\/([^\/]+)/,
-            /\/reel\/(\d+)/,
-            /\/watch\/\?v=(\d+)/
-        ];
-        
-        for (const pattern of patterns) {
-            const match = args.match(pattern);
-            if (match) {
-                videoId = match[1];
-                console.log(`✅ Extracted video ID: ${videoId}`);
-                break;
-            }
+        const patterns = [/\/videos\/(\d+)/, /\/watch\?v=(\d+)/, /\/share\/v\/([^\/]+)/, /\/reel\/(\d+)/];
+        for (const p of patterns) {
+            const m = args.match(p);
+            if (m) { videoId = m[1]; break; }
         }
-        
-        // If we have a video ID, create a proper watch URL
-        if (videoId) {
-            videoUrl = `https://www.facebook.com/watch?v=${videoId}`;
-        }
-        
-        // Create download links using popular Facebook video downloader services
+        if (videoId) videoUrl = `https://www.facebook.com/watch?v=${videoId}`;
         const downloadLinks = [
-            {
-                name: '🔗 Snapsave (Recommended)',
-                url: `https://snapsave.app/`,
-                instructions: `1. Go to snapsave.app\n2. Paste this URL: ${videoUrl}\n3. Click Download`
-            },
-            {
-                name: '🔗 FB Down',
-                url: `https://fbdown.net/`,
-                instructions: `1. Go to fbdown.net\n2. Paste this URL: ${videoUrl}\n3. Click Download`
-            },
-            {
-                name: '🔗 GetFvid',
-                url: `https://getfvid.com/`,
-                instructions: `1. Go to getfvid.com\n2. Paste this URL: ${videoUrl}\n3. Click Download`
-            },
-            {
-                name: '🔗 SaveFrom.net',
-                url: `https://en.savefrom.net/`,
-                instructions: `1. Go to savefrom.net\n2. Paste this URL: ${videoUrl}\n3. Click Download`
-            }
+            { name: '🔗 Snapsave (Recommended)', url: `https://snapsave.app/`, instructions: `1. Go to snapsave.app\n2. Paste this URL: ${videoUrl}\n3. Click Download` },
+            { name: '🔗 FB Down', url: `https://fbdown.net/`, instructions: `1. Go to fbdown.net\n2. Paste this URL: ${videoUrl}\n3. Click Download` },
+            { name: '🔗 GetFvid', url: `https://getfvid.com/`, instructions: `1. Go to getfvid.com\n2. Paste this URL: ${videoUrl}\n3. Click Download` },
+            { name: '🔗 SaveFrom.net', url: `https://en.savefrom.net/`, instructions: `1. Go to savefrom.net\n2. Paste this URL: ${videoUrl}\n3. Click Download` }
         ];
-        
-        // Send the response with clickable links
         ws.send(JSON.stringify({
             type: 'shot_success',
             data: {
                 message: '✅ Facebook video link processed!',
                 videoId: videoId || 'Unknown',
-                videoUrl: videoUrl,
-                downloadLinks: downloadLinks,
+                videoUrl,
+                downloadLinks,
                 note: '📥 Click any link below to download the video:',
-                instruction: '💡 If the downloader doesn\'t work, try a different one from the list above.'
+                instruction: '💡 If the downloader doesn\'t work, try a different one.'
             }
         }));
-        
     } catch (error) {
-        console.error('Facebook processing error:', error);
-        ws.send(JSON.stringify({
-            type: 'error',
-            data: `❌ Error processing video: ${error.message}\n\n💡 Please try using a Facebook video downloader website directly:\n• https://snapsave.app\n• https://fbdown.net\n• https://getfvid.com\n\n📌 Your video URL: ${args}`
-        }));
+        ws.send(JSON.stringify({ type: 'error', data: `❌ Error: ${error.message}` }));
     }
 }
 
-// ============================================
-// 🗺️ .TRACE COMMAND - IP Geolocation
-// ============================================
+// ---- .trace ----
 async function handleTrace(args, ws) {
-    // If no argument given, the API will detect the caller's IP
-    let query = args ? args.trim() : '';
-
-    ws.send(JSON.stringify({
-        type: 'trace_progress',
-        data: query ? `⏳ Tracing IP: ${query}...` : '⏳ Tracing your current IP address...'
-    }));
-
+    const query = args ? args.trim() : '';
+    ws.send(JSON.stringify({ type: 'trace_progress', data: query ? `⏳ Tracing IP: ${query}...` : '⏳ Tracing your current IP...' }));
     try {
-        // Build the API URL
         let apiUrl = 'http://ip-api.com/json/';
         if (query) {
-            // Basic validation for IP or domain
-            const isValid = /^([0-9]{1,3}\.){3}[0-9]{1,3}$/.test(query) || /^([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/.test(query);
-            if (!isValid) {
-                ws.send(JSON.stringify({
-                    type: 'error',
-                    data: '❌ Invalid IP address or domain name. Please provide a valid IPv4 address or domain.'
-                }));
+            const valid = /^([0-9]{1,3}\.){3}[0-9]{1,3}$/.test(query) || /^([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/.test(query);
+            if (!valid) {
+                ws.send(JSON.stringify({ type: 'error', data: '❌ Invalid IP or domain.' }));
                 return;
             }
             apiUrl += encodeURIComponent(query);
         }
-        // If query is empty, the API will use the requestor's IP
-
-        // Request extra fields and set language to English
         apiUrl += '?fields=status,message,query,country,countryCode,region,regionName,city,zip,lat,lon,timezone,isp,org,as,asname,mobile,proxy,hosting';
-
-        console.log(`🗺️ Tracing: ${query || 'Current IP'}`);
         const response = await axios.get(apiUrl, { timeout: 10000 });
-
         const data = response.data;
-
         if (data.status === 'fail') {
-            ws.send(JSON.stringify({
-                type: 'error',
-                data: `❌ Trace failed: ${data.message || 'Unknown error'}`
-            }));
+            ws.send(JSON.stringify({ type: 'error', data: `❌ Trace failed: ${data.message}` }));
             return;
         }
-
-        // Build result object
         const result = {
             query: data.query || query || 'Unknown',
             country: data.country || 'N/A',
@@ -1129,148 +746,87 @@ async function handleTrace(args, ws) {
             proxy: data.proxy !== undefined ? (data.proxy ? 'Yes' : 'No') : 'N/A',
             hosting: data.hosting !== undefined ? (data.hosting ? 'Yes' : 'No') : 'N/A'
         };
-
-        ws.send(JSON.stringify({
-            type: 'trace_success',
-            data: result
-        }));
-
+        ws.send(JSON.stringify({ type: 'trace_success', data: result }));
     } catch (error) {
-        console.error('Trace API Error:', error.message);
-        ws.send(JSON.stringify({
-            type: 'error',
-            data: `❌ Trace failed: ${error.message}`
-        }));
+        ws.send(JSON.stringify({ type: 'error', data: `❌ Trace failed: ${error.message}` }));
     }
 }
 
-// ============================================
-// 👑 ADMIN UPGRADE COMMAND
-// ============================================
+// ---- .upgrade (admin) ----
 async function handleUpgrade(args, ws, userId) {
     const users = getUsers();
     const currentUser = users[userId];
-    
     if (!currentUser || currentUser.role !== 'admin') {
-        ws.send(JSON.stringify({
-            type: 'error',
-            data: '❌ You do not have permission to use this command. Admin only.'
-        }));
+        ws.send(JSON.stringify({ type: 'error', data: '❌ Admin only.' }));
         return;
     }
-    
     if (!args) {
-        ws.send(JSON.stringify({
-            type: 'error',
-            data: 'Usage: .upgrade [userID] [numberOfDays]'
-        }));
+        ws.send(JSON.stringify({ type: 'error', data: 'Usage: .upgrade [userID] [days]' }));
         return;
     }
-    
     const parts = args.split(' ');
     const targetUserId = parts[0];
     const days = parseInt(parts[1]);
-    
     if (!targetUserId || !days || days <= 0) {
-        ws.send(JSON.stringify({
-            type: 'error',
-            data: 'Invalid parameters. Usage: .upgrade [userID] [numberOfDays]'
-        }));
+        ws.send(JSON.stringify({ type: 'error', data: 'Invalid parameters.' }));
         return;
     }
-    
     if (!users[targetUserId]) {
-        ws.send(JSON.stringify({
-            type: 'error',
-            data: `❌ User ${targetUserId} not found`
-        }));
+        ws.send(JSON.stringify({ type: 'error', data: `❌ User ${targetUserId} not found` }));
         return;
     }
-    
     const trials = getTrials();
-    if (!trials[targetUserId]) {
-        trials[targetUserId] = { used: 0, total: 5, expiry: null };
-    }
-    
-    const expiryDate = new Date();
-    expiryDate.setDate(expiryDate.getDate() + days);
-    trials[targetUserId].expiry = expiryDate.toISOString();
+    if (!trials[targetUserId]) trials[targetUserId] = { used: 0, total: 5, expiry: null };
+    const expiry = new Date();
+    expiry.setDate(expiry.getDate() + days);
+    trials[targetUserId].expiry = expiry.toISOString();
     trials[targetUserId].total = 999;
-    
     saveTrials(trials);
-    
     ws.send(JSON.stringify({
         type: 'upgrade_success',
-        data: {
-            userId: targetUserId,
-            username: users[targetUserId].username,
-            days: days,
-            expiry: expiryDate.toISOString()
-        }
+        data: { userId: targetUserId, username: users[targetUserId].username, days, expiry: expiry.toISOString() }
     }));
-    
     const client = clients.get(targetUserId);
     if (client) {
         client.ws.send(JSON.stringify({
             type: 'upgraded',
-            data: {
-                message: `🎉 Your account has been upgraded to premium for ${days} days!`,
-                expiry: expiryDate.toISOString()
-            }
+            data: { message: `🎉 Your account has been upgraded to premium for ${days} days!`, expiry: expiry.toISOString() }
         }));
     }
 }
 
-// ============================================
-// 📊 TRIALS COMMAND
-// ============================================
+// ---- .trials ----
 function handleTrials(ws, userId) {
     const trials = getUserTrials(userId);
     const users = getUsers();
     const user = users[userId];
-    
     const isPremium = trials.expiry ? new Date(trials.expiry) > new Date() : false;
-    let message = `📊 Trial Information\n\n`;
-    message += `User ID: ${userId}\n`;
-    message += `Username: ${user ? user.username : 'Unknown'}\n`;
-    message += `Trials Used: ${trials.used}/${trials.total}\n`;
-    message += `Status: ${isPremium ? '✅ PREMIUM' : '🆓 Free User'}\n`;
-    
+    let msg = `📊 Trial Information\n\n`;
+    msg += `User ID: ${userId}\nUsername: ${user ? user.username : 'Unknown'}\n`;
+    msg += `Trials Used: ${trials.used}/${trials.total}\nStatus: ${isPremium ? '✅ PREMIUM' : '🆓 Free User'}\n`;
     if (isPremium) {
-        const expiryDate = new Date(trials.expiry);
-        const daysLeft = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
-        message += `Premium Expiry: ${new Date(trials.expiry).toLocaleDateString()} (${daysLeft} days left)\n`;
+        const daysLeft = Math.ceil((new Date(trials.expiry) - new Date()) / (1000*60*60*24));
+        msg += `Premium Expiry: ${new Date(trials.expiry).toLocaleDateString()} (${daysLeft} days left)\n`;
     } else {
         const remaining = trials.total - trials.used;
-        message += `Remaining Free Trials: ${remaining}\n`;
+        msg += `Remaining Free Trials: ${remaining}\n`;
         if (remaining === 0) {
-            message += `\n⚠️ You have used all free trials!\n`;
-            message += `Upgrade to premium: K500 via TNM Mpamba (0891011842) or Airtel Money (0985280353)\n`;
-            message += `After payment, send confirmation + your ID to admin on WhatsApp: 0899128441`;
+            msg += `\n⚠️ You have used all free trials!\nUpgrade: K500 via TNM Mpamba (0891011842) or Airtel Money (0985280353)\nAfter payment, send confirmation + your ID to admin on WhatsApp: 0899128441`;
         }
     }
-    
-    ws.send(JSON.stringify({
-        type: 'trials_info',
-        data: message
-    }));
+    ws.send(JSON.stringify({ type: 'trials_info', data: msg }));
 }
 
-// ============================================
-// 📡 BROADCAST FUNCTION
-// ============================================
+// ---- Broadcast (fixed) ----
 function broadcastMessage(targetUserId, message) {
-    const payload = JSON.stringify({
-        type: 'public',
-        data: message
-    });
-    
+    const payload = JSON.stringify({ type: 'public', data: message });
     if (targetUserId) {
         const client = clients.get(targetUserId);
         if (client && client.ws.readyState === WebSocket.OPEN) {
             client.ws.send(payload);
         }
     } else {
+        // Send to ALL connected clients
         clients.forEach((client) => {
             if (client.ws.readyState === WebSocket.OPEN) {
                 client.ws.send(payload);
@@ -1279,28 +835,12 @@ function broadcastMessage(targetUserId, message) {
     }
 }
 
-// ============================================
-// 📁 STATIC FILES & ENDPOINTS
-// ============================================
+// ---- Static & Start ----
 app.use('/downloads', express.static(DOWNLOADS_PATH));
-
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-app.get('/health', (req, res) => {
-    res.status(200).json({ 
-        status: 'OK', 
-        timestamp: new Date().toISOString(),
-        apiKeys: {
-            weather: process.env.WEATHER_API_KEY ? '✅ Set' : '❌ Missing',
-            news: process.env.NEWS_API_KEY ? '✅ Set' : '❌ Missing'
-        }
-    });
-});
-
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+app.get('/health', (req, res) => res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() }));
 app.get('/debug-env', (req, res) => {
-    const envVars = {
+    const env = {
         WEATHER_API_KEY: process.env.WEATHER_API_KEY ? '✅ Set' : '❌ Missing',
         NEWS_API_KEY: process.env.NEWS_API_KEY ? '✅ Set' : '❌ Missing',
         JWT_SECRET: process.env.JWT_SECRET ? '✅ Set' : '❌ Missing',
@@ -1308,40 +848,12 @@ app.get('/debug-env', (req, res) => {
         NODE_ENV: process.env.NODE_ENV || 'Not set',
         PORT: process.env.PORT || 'Not set'
     };
-    
-    try {
-        const envPath = path.join(__dirname, '.env');
-        if (fs.existsSync(envPath)) {
-            const envContent = fs.readFileSync(envPath, 'utf8');
-            const keys = envContent.split('\n')
-                .filter(line => line.trim() && !line.startsWith('#'))
-                .map(line => line.split('=')[0]);
-            envVars['.env_file_found'] = '✅ Yes';
-            envVars['.env_keys'] = keys;
-        } else {
-            envVars['.env_file_found'] = '❌ No';
-        }
-    } catch (err) {
-        envVars['.env_file_found'] = '⚠️ Error reading: ' + err.message;
-    }
-    
-    res.json({
-        status: 'OK',
-        timestamp: new Date().toISOString(),
-        environment: envVars
-    });
+    res.json({ status: 'OK', environment: env });
 });
 
-// ============================================
-// 🚀 START SERVER
-// ============================================
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`\n✅ Bot server running on http://localhost:${PORT}`);
-    console.log(`✅ WebSocket server running on ws://localhost:${PORT}`);
-    console.log(`✅ Health check: http://localhost:${PORT}/health`);
-    console.log(`✅ Debug env: http://localhost:${PORT}/debug-env`);
-    console.log(`✅ Facebook video downloader links ready!`);
-    console.log(`✅ IP Geolocation (.trace) ready!`);
-    console.log(`✅ Videos will be saved to: ${DOWNLOADS_PATH}\n`);
+    console.log(`✅ WebSocket running on ws://localhost:${PORT}`);
+    console.log(`✅ Device-based registration blocking active!`);
 });
