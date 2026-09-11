@@ -1,3 +1,4 @@
+
 // server.js - FINAL with RSS News
 const express = require('express');
 const cors = require('cors');
@@ -264,12 +265,12 @@ wss.on('connection', (ws, req) => {
                     data: {
                         message: 'You have used all your free trials. Please upgrade.',
                         upgradeInfo: {
-                            price: 'K500',
+                            price: 'K5000',
                             methods: [
                                 { provider: 'TNM Mpamba', number: '0891011842' },
                                 { provider: 'Airtel Money', number: '0985280353' }
                             ],
-                            adminWhatsApp: '0899128441'
+                            adminWhatsApp: '0891011842'
                         }
                     }
                 }));
@@ -666,10 +667,11 @@ function handleAssist(ws, userId) {
 // ---- .developer ----
 function handleDeveloper(ws) {
     const info = {
-        name: 'Emmanuel Chimombo',
+        name: 'Emmanuel MECHANIC PIASONI',
+        with: 'Lumbani Nyirenda',
         education: 'Mzuzu University',
         program: 'ICT Student',
-        year: 'Current Student',
+        year: 'EXPERIENCED',
         skills: ['Web Development', 'Bot Development', 'AI Integration']
     };
     ws.send(JSON.stringify({ type: 'developer', data: info }));
