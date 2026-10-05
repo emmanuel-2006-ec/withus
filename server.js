@@ -1,5 +1,4 @@
-
-// server.js - FINAL with RSS News
+// server.js - FINAL with trial-expired info commands & user ID in alert
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
@@ -18,7 +17,6 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
-// ---- RSS Parser ----
 const parser = new Parser({
   timeout: 10000,
   headers: { 'User-Agent': 'Mozilla/5.0' }
@@ -148,7 +146,6 @@ wss.on('connection', (ws, req) => {
                 const users = getUsers();
                 let foundUser = null, foundUserId = null;
 
-                // Admin login
                 if (username === 'blessed') {
                     const isValid = bcrypt.compareSync(password, users.admin.password);
                     if (isValid) {
@@ -160,7 +157,6 @@ wss.on('connection', (ws, req) => {
                         return;
                     }
                 } else {
-                    // Existing user
                     for (const [id, user] of Object.entries(users)) {
                         if (user.username === username && id !== 'admin') {
                             const isValid = bcrypt.compareSync(password, user.password);
@@ -172,9 +168,7 @@ wss.on('connection', (ws, req) => {
                         }
                     }
 
-                    // Registration
                     if (!foundUser && isNewUser) {
-                        // Check device
                         const existingDevice = Object.entries(users).find(([id, u]) => u.deviceId === deviceId && id !== 'admin');
                         if (existingDevice) {
                             ws.send(JSON.stringify({
@@ -183,7 +177,6 @@ wss.on('connection', (ws, req) => {
                             }));
                             return;
                         }
-                        // Create user
                         const newUserId = generateUserId();
                         const hashedPassword = bcrypt.hashSync(password, 10);
                         const newUser = {
@@ -247,7 +240,6 @@ wss.on('connection', (ws, req) => {
                 return;
             }
 
-            // next_line for reading
             if (data.type === 'next_line') {
                 if (readingStates[userId] && readingStates[userId].active) {
                     readNextLine(userId);
@@ -259,22 +251,32 @@ wss.on('connection', (ws, req) => {
                 ws.send(JSON.stringify({ type: 'error', data: 'Please authenticate first' }));
                 return;
             }
+
+            // ---- Trial check ----
+            const allowedCommandsWhenExpired = ['.myid', '.trials', '.assist', '.developer', '.system'];
+
             if (userId !== 'admin' && !hasTrialAvailable(userId)) {
-                ws.send(JSON.stringify({
-                    type: 'trial_expired',
-                    data: {
-                        message: 'You have used all your free trials. Please upgrade.',
-                        upgradeInfo: {
-                            price: 'K5000',
-                            methods: [
-                                { provider: 'TNM Mpamba', number: '0891011842' },
-                                { provider: 'Airtel Money', number: '0985280353' }
-                            ],
-                            adminWhatsApp: '0891011842'
+                if (data.command && !allowedCommandsWhenExpired.includes(data.command)) {
+                    const users = getUsers();
+                    const user = users[userId];
+                    ws.send(JSON.stringify({
+                        type: 'trial_expired',
+                        data: {
+                            message: `You have used all your free trials, ${user ? user.username : 'user'}. Please upgrade to continue.`,
+                            userId: userId,
+                            username: user ? user.username : 'Unknown',
+                            upgradeInfo: {
+                                price: 'K500',
+                                methods: [
+                                    { provider: 'TNM Mpamba', number: '0891011842' },
+                                    { provider: 'Airtel Money', number: '0985280353' }
+                                ],
+                                adminWhatsApp: '0899128441'
+                            }
                         }
-                    }
-                }));
-                return;
+                    }));
+                    return;
+                }
             }
 
             await handleCommand(data.command, data.args, ws, userId);
@@ -322,7 +324,6 @@ async function handleCommand(command, args, ws, userId) {
     }
 }
 
-// ---- .myid ----
 function handleMyId(ws, userId) {
     const users = getUsers();
     const user = users[userId];
@@ -339,7 +340,6 @@ function handleMyId(ws, userId) {
     }));
 }
 
-// ---- .deviceid ----
 function handleDeviceId(ws, userId) {
     const users = getUsers();
     const user = users[userId];
@@ -352,7 +352,7 @@ function handleDeviceId(ws, userId) {
     }));
 }
 
-// ---- .weather (unchanged) ----
+// ---- .weather ----
 async function handleWeather(args, ws) {
     const city = args || 'Lilongwe';
     try {
@@ -405,6 +405,7 @@ async function handleWeather(args, ws) {
         ws.send(JSON.stringify({ type: 'weather', data: { city, forecast: mock, note: `⚠️ API error: ${error.message}` } }));
     }
 }
+
 function generateMockWeather(city) {
     const conditions = [
         { desc: '☀️ Sunny', icon: '01d' },
@@ -435,15 +436,15 @@ function generateMockWeather(city) {
     });
 }
 
-// ---- .news (RSS version) ----
+// ---- .news (RSS) ----
 async function handleNews(args, ws) {
     const category = args || 'global';
     let feedUrl = '';
     let feedName = '';
 
     if (category === 'malawi') {
-        feedUrl = 'https://news.google.com/rss?hl=en-US&gl=MW&ceid=MW:en';
-        feedName = 'Malawi News (Google)';
+        feedUrl = 'https://news.google.com/rss/search?q=Malawi&hl=en-US&gl=US&ceid=US:en';
+        feedName = 'Malawi News (Google Search)';
     } else {
         feedUrl = 'https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en';
         feedName = 'Global News (Google)';
@@ -462,7 +463,6 @@ async function handleNews(args, ws) {
             throw new Error('No items in feed');
         }
 
-        // Shuffle and pick up to 8 articles
         const shuffled = feed.items.sort(() => Math.random() - 0.5);
         const count = Math.min(4 + Math.floor(Math.random() * 5), shuffled.length);
         const selected = shuffled.slice(0, count);
@@ -472,7 +472,7 @@ async function handleNews(args, ws) {
             description: item.contentSnippet || item.content || 'No description',
             source: item.source?.title || item.creator || 'News Source',
             url: item.link || '#',
-            image: null, // Google RSS doesn't provide images
+            image: null,
             publishedAt: item.pubDate ? new Date(item.pubDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) : 'Recent',
             author: item.author || 'Unknown'
         }));
@@ -488,7 +488,6 @@ async function handleNews(args, ws) {
         }));
     } catch (error) {
         console.error('RSS fetch error:', error.message);
-        // Fallback to mock data
         const mock = generateMockNews(category);
         ws.send(JSON.stringify({
             type: 'news',
@@ -502,7 +501,6 @@ async function handleNews(args, ws) {
     }
 }
 
-// ---- Mock news (fallback) ----
 function generateMockNews(category) {
     const globalPool = [
         { title: 'Global Economy Shows Strong Recovery Signs', description: 'World markets respond positively to economic indicators as GDP growth exceeds expectations in major economies.', source: 'World News Network', author: 'Financial Desk' },
@@ -532,7 +530,7 @@ function generateMockNews(category) {
     return selected.map(article => ({ ...article, image: null, publishedAt: today }));
 }
 
-// ---- .read (unchanged) ----
+// ---- .read ----
 function handleRead(ws) {
     ws.send(JSON.stringify({ type: 'read_prompt', data: '📄 Please upload a PDF or text document to read aloud' }));
 }
@@ -597,7 +595,7 @@ function readNextLine(userId) {
     }
 }
 
-// ---- .me (fixed broadcast) ----
+// ---- .me ----
 function handleMe(args, ws, userId) {
     const message = args || 'Hello everyone!';
     const users = getUsers();
@@ -616,7 +614,7 @@ function handleMe(args, ws, userId) {
     ws.send(JSON.stringify({ type: 'confirm', data: '✅ Message sent to everyone' }));
 }
 
-// ---- .system (admin broadcast) ----
+// ---- .system ----
 async function handleSystem(args, ws, userId) {
     const users = getUsers();
     const user = users[userId];
@@ -667,11 +665,10 @@ function handleAssist(ws, userId) {
 // ---- .developer ----
 function handleDeveloper(ws) {
     const info = {
-        name: 'Emmanuel MECHANIC PIASONI',
-        with: 'Lumbani Nyirenda',
+        name: 'Emmanuel Chimombo',
         education: 'Mzuzu University',
         program: 'ICT Student',
-        year: 'EXPERIENCED',
+        year: 'Current Student',
         skills: ['Web Development', 'Bot Development', 'AI Integration']
     };
     ws.send(JSON.stringify({ type: 'developer', data: info }));
@@ -852,7 +849,7 @@ function handleTrials(ws, userId) {
         const remaining = trials.total - trials.used;
         msg += `Remaining Free Trials: ${remaining}\n`;
         if (remaining === 0) {
-            msg += `\n⚠️ You have used all free trials!\nUpgrade: K500 via TNM Mpamba (0891011842) or Airtel Money (0985280353)\nAfter payment, send confirmation + your ID to admin on WhatsApp: 0899128441`;
+            msg += `\n⚠️ You have used all free trials!\nUpgrade: K500 via TNM Mpamba (0891011842) or Airtel Money (0985280353)\nAfter payment, send confirmation + your ID (${userId}) to admin on WhatsApp: 0899128441`;
         }
     }
     ws.send(JSON.stringify({ type: 'trials_info', data: msg }));
