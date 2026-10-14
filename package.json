@@ -1,15 +1,13 @@
 {
   "name": "bot-web-service",
   "version": "1.0.0",
-  "description": "Web service bot with file sharing and video downloads",
+  "description": "Web service bot with RSS news, weather, and file sharing",
   "main": "server.js",
   "engines": {
-    "node": "18.x",
-    "npm": "9.x"
+    "node": "20.x"
   },
   "scripts": {
-    "start": "node server.js",
-    "build": "npm install"
+    "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.18.2",
@@ -20,9 +18,6 @@
     "bcryptjs": "^2.4.3",
     "jsonwebtoken": "^9.0.2",
     "dotenv": "^16.3.1",
-    "fb-downloader": "^1.0.0",
-    "ytdl-core": "^4.11.5",
-    "fluent-ffmpeg": "^2.1.2",
     "uuid": "^9.0.1",
     "rss-parser": "^3.13.0"
   },
